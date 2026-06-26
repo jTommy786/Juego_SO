@@ -253,6 +253,8 @@ class NetworkManager:
                 city_ping = 20.0
             self.regional_pings[city] = min(300.0, city_ping)
 
+        self.all_offline = all_offline
+
         if active_count > 0:
             self.latency = pings_sum / active_count
         else:

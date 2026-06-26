@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-import platform
 import random
 try:
     import winsound
@@ -13,6 +12,7 @@ class GameGUI:
     def __init__(self, root):
         self.root = root
         self.root.withdraw()  
+        self.ui_scale = 2.0
         
         # Configurar la ventana principal (root) como anclaje de la barra de tareas
         self.root.title("Ping Zero: Server Manager")
@@ -22,6 +22,7 @@ class GameGUI:
         self.window = tk.Toplevel(self.root)
         self.window.title("Ping Zero: Server Manager")
         self.window.configure(bg="#0c0d12")
+        self.window.tk.call("tk", "scaling", self.ui_scale)
         
         # Eliminar decoración nativa del SO
         self.window.overrideredirect(True)
@@ -54,8 +55,8 @@ class GameGUI:
         
         screen_w = self.window.winfo_screenwidth()
         screen_h = self.window.winfo_screenheight()
-        normal_w = 1100
-        normal_h = 700
+        normal_w = int(screen_w * 0.95)
+        normal_h = int(screen_h * 0.92)
         x = (screen_w - normal_w) // 2
         y = (screen_h - normal_h) // 2
         self.normal_geometry = f"{normal_w}x{normal_h}+{x}+{y}"
@@ -94,22 +95,11 @@ class GameGUI:
             y = self.window.winfo_y() - self.drag_data["y"] + event.y
             self.window.geometry(f"+{x}+{y}")
 
-    def minimize_window(self):
-        self.window.withdraw()
-        self.root.iconify()
+    def ui_font(self, size, *styles, family="Helvetica"):
+        return (family, int(size * self.ui_scale), *styles)
 
-    def toggle_maximize(self, event=None):
-        if self.is_maximized:
-            self.window.geometry(self.normal_geometry)
-            self.is_maximized = False
-            self.btn_max.config(text="□")
-        else:
-            self.normal_geometry = self.window.geometry()
-            screen_w = self.window.winfo_screenwidth()
-            screen_h = self.window.winfo_screenheight()
-            self.window.geometry(f"{screen_w}x{screen_h}+0+0")
-            self.is_maximized = True
-            self.btn_max.config(text="❐")
+    def ui_mono_font(self, size, *styles):
+        return ("Consolas", int(size * self.ui_scale), *styles)
 
     def on_root_map(self, event):
         if event.widget == self.root:
@@ -120,73 +110,44 @@ class GameGUI:
         if event.widget == self.root:
             self.window.withdraw()
 
-    # --- Ayuda contextual al pasar el mouse ---
-    def bind_hover(self, widget, text):
-        pass
-
     # --- Construcción de la UI ---
     def setup_ui(self):
-        # 0. Custom Title Bar (Orden de Windows estándar: Minimizar, Maximizar, Cerrar)
-        self.title_bar = tk.Frame(self.window, bg=self.bg_panel, height=30)
+        # 0. Custom Title Bar simplificada
+        self.title_bar = tk.Frame(self.window, bg=self.bg_panel, height=56)
         self.title_bar.pack(fill="x", side="top")
         self.title_bar.pack_propagate(False)
         
         self.title_bar.bind("<ButtonPress-1>", self.start_drag)
         self.title_bar.bind("<B1-Motion>", self.drag_window)
-        self.title_bar.bind("<Double-Button-1>", self.toggle_maximize)
         
-        title_label = tk.Label(self.title_bar, text=" ⚙️ PING ZERO: Server Manager", font=("Helvetica", 9, "bold"), fg=self.color_blue, bg=self.bg_panel)
-        title_label.pack(side="left", padx=10)
+        title_label = tk.Label(self.title_bar, text=" ⚙️ PING ZERO: Server Manager", font=self.ui_font(5, "bold"), fg=self.color_blue, bg=self.bg_panel)
+        title_label.pack(side="left", padx=20)
         title_label.bind("<ButtonPress-1>", self.start_drag)
         title_label.bind("<B1-Motion>", self.drag_window)
-        title_label.bind("<Double-Button-1>", self.toggle_maximize)
-
-        # Botones discretos de persistencia
-        btn_save_style = {"font": ("Helvetica", 8, "bold"), "bg": self.bg_panel, "fg": self.fg_light, "relief": "flat", "padx": 5}
-        self.btn_save = tk.Button(self.title_bar, text="💾 Guardar", command=self.save_game_gui, **btn_save_style)
-        self.btn_save.pack(side="left", padx=5)
-        self.btn_save.bind("<Enter>", lambda e: self.btn_save.config(bg="#313244"))
-        self.btn_save.bind("<Leave>", lambda e: self.btn_save.config(bg=self.bg_panel))
-
-        self.btn_load = tk.Button(self.title_bar, text="📂 Cargar", command=self.load_game_gui, **btn_save_style)
-        self.btn_load.pack(side="left", padx=5)
-        self.btn_load.bind("<Enter>", lambda e: self.btn_load.config(bg="#313244"))
-        self.btn_load.bind("<Leave>", lambda e: self.btn_load.config(bg=self.bg_panel))
         
-        btn_style = {"font": ("Helvetica", 10, "bold"), "bg": self.bg_panel, "fg": self.fg_light, "relief": "flat", "width": 4, "height": 1}
+        btn_style = {"font": self.ui_font(5, "bold"), "bg": self.bg_panel, "fg": self.fg_light, "relief": "flat", "width": 4, "height": 1}
         
-        # Cerrar, Maximizar y Minimizar
-        self.btn_close = tk.Button(self.title_bar, text="X", command=self.root.destroy, **btn_style)
-        self.btn_close.pack(side="right")
+        # Solo botón de salida
+        self.btn_close = tk.Button(self.title_bar, text="Salir", command=self.root.destroy, **btn_style)
+        self.btn_close.pack(side="right", padx=10)
         self.btn_close.bind("<Enter>", lambda e: self.btn_close.config(bg=self.color_red, fg="#11111b"))
         self.btn_close.bind("<Leave>", lambda e: self.btn_close.config(bg=self.bg_panel, fg=self.fg_light))
-        
-        self.btn_max = tk.Button(self.title_bar, text="❐" if self.is_maximized else "□", command=self.toggle_maximize, **btn_style)
-        self.btn_max.pack(side="right")
-        self.btn_max.bind("<Enter>", lambda e: self.btn_max.config(bg="#313244"))
-        self.btn_max.bind("<Leave>", lambda e: self.btn_max.config(bg=self.bg_panel))
-        
-        self.btn_min = tk.Button(self.title_bar, text="_", command=self.minimize_window, **btn_style)
-        self.btn_min.pack(side="right")
-        self.btn_min.bind("<Enter>", lambda e: self.btn_min.config(bg="#313244"))
-        self.btn_min.bind("<Leave>", lambda e: self.btn_min.config(bg=self.bg_panel))
 
         # 1. Header Frame
-        header = tk.Frame(self.window, bg=self.bg_panel, height=45)
+        header = tk.Frame(self.window, bg=self.bg_panel, height=64)
         header.pack(fill="x", side="top")
         
-        tk.Label(header, text="⚙️ PING ZERO:", font=("Helvetica", 11, "bold"), fg=self.color_blue, bg=self.bg_panel).pack(side="left", padx=(20, 5), pady=8)
-        self.lbl_time = tk.Label(header, text="📅 DIA: 1 [PLANIFICACION]", font=("Helvetica", 9, "bold"), fg=self.color_yellow, bg=self.bg_panel)
-        self.lbl_time.pack(side="left", padx=10, pady=8)
+        self.lbl_time = tk.Label(header, text="📅 DIA: 1 [PLANIFICACION]", font=self.ui_font(7, "bold"), fg=self.color_yellow, bg=self.bg_panel)
+        self.lbl_time.pack(side="left", padx=(20, 12), pady=11)
         
-        self.lbl_forecast = tk.Label(header, text="📈 PRONOSTICO: Carga normal", font=("Helvetica", 9, "bold"), fg=self.color_blue, bg=self.bg_panel)
-        self.lbl_forecast.pack(side="left", padx=15, pady=8)
+        self.lbl_forecast = tk.Label(header, text="📈 PRONOSTICO: Carga normal", font=self.ui_font(7, "bold"), fg=self.color_blue, bg=self.bg_panel)
+        self.lbl_forecast.pack(side="left", padx=12, pady=11)
         
-        self.lbl_rank = tk.Label(header, text="🏆 RANGO: SysAdmin Junior", font=("Helvetica", 9, "bold"), fg=self.color_yellow, bg=self.bg_panel)
-        self.lbl_rank.pack(side="left", padx=15, pady=8)
+        self.lbl_rank = tk.Label(header, text="🏆 RANGO: SysAdmin Junior", font=self.ui_font(7, "bold"), fg=self.color_yellow, bg=self.bg_panel)
+        self.lbl_rank.pack(side="left", padx=12, pady=11)
         
-        self.lbl_autoscale_banner = tk.Label(header, text="AUTO-SCALING: INACTIVO", font=("Helvetica", 8, "bold"), fg=self.fg_dim, bg=self.bg_panel)
-        self.lbl_autoscale_banner.pack(side="right", padx=20, pady=8)
+        self.lbl_autoscale_banner = tk.Label(header, text="AUTO-SCALING: INACTIVO", font=self.ui_font(6, "bold"), fg=self.fg_dim, bg=self.bg_panel)
+        self.lbl_autoscale_banner.pack(side="right", padx=20, pady=11)
 
         # 2. Contenedor Principal (2 Columnas)
         main_container = tk.Frame(self.window, bg=self.bg_dark)
@@ -197,7 +158,7 @@ class GameGUI:
         left_col.pack(side="left", fill="both", expand=True, padx=(0, 10))
 
         # Columna Derecha (Panel de Control Fijo - 30% del ancho)
-        right_col = tk.Frame(main_container, bg=self.bg_dark, width=330)
+        right_col = tk.Frame(main_container, bg=self.bg_dark, width=420)
         right_col.pack(side="right", fill="both")
         right_col.pack_propagate(False)
 
@@ -280,14 +241,7 @@ class GameGUI:
         log_lf.pack(side="bottom", fill="x", expand=False)
         log_lf.pack_propagate(False)
         
-        self.frame_traffic_breakdown = tk.Frame(log_lf, bg="#0d0e15", bd=0)
-        self.frame_traffic_breakdown.pack(fill="x", padx=5, pady=4)
-        
-        self.lbl_traffic_breakdown = tk.Label(self.frame_traffic_breakdown, text="📊 TRÁFICO POR CIUDAD:\n• Miami: 0 req/s\n• Bogotá: 0 req/s\n• São Paulo: 0 req/s",
-                                              font=("Helvetica", 8, "bold"), fg=self.color_blue, bg="#0d0e15", justify="left")
-        self.lbl_traffic_breakdown.pack(pady=4)
-        
-        self.txt_logs = tk.Text(log_lf, bg="#0d0e15", fg=self.color_blue, font=("Consolas", 8), bd=0, state="disabled")
+        self.txt_logs = tk.Text(log_lf, bg="#0d0e15", fg=self.color_blue, font=self.ui_mono_font(8), bd=0, state="disabled")
         self.txt_logs.pack(fill="both", expand=True, padx=5, pady=(0, 4))
 
         # 3.2 Sistema de Pestañas (ttk.Notebook)
@@ -305,7 +259,7 @@ class GameGUI:
         self.inspection_lf.pack(fill="both", expand=True)
         
         self.inspection_content = tk.Frame(self.inspection_lf, bg=self.bg_dark)
-        self.inspection_content.pack(fill="both", expand=True, padx=8, pady=8)
+        self.inspection_content.pack(fill="both", expand=True, padx=12, pady=12)
 
         # Pestaña 2: Mercado Global
         shop_container = tk.Frame(tab_shop, bg=self.bg_dark)
@@ -320,16 +274,11 @@ class GameGUI:
         ]
 
         for key, text in upgrades:
-            btn = tk.Button(shop_container, text=text, font=("Helvetica", 8, "bold"), relief="flat", height=2,
+            btn = tk.Button(shop_container, text=text, font=("Helvetica", 16, "bold"), relief="flat", height=2,
                             bg=self.bg_card, fg=self.fg_light, activebackground=self.color_blue, justify="left", anchor="w", padx=8,
                             command=lambda k=key: self.buy_upgrade_click(k))
             btn.pack(side="top", fill="x", pady=3)
             self.buttons[key] = btn
-
-        self.bind_hover(self.buttons["autoscale"], "☁️ LICENCIA CLOUD: Habilita el escalado automático en la nube cuando la carga del sistema sea extrema.")
-        self.bind_hover(self.buttons["geo"], "🌍 ROUTER GEO DNS: Enruta a los clientes al servidor más cercano, eliminando por completo la penalización de ping por desbordamiento.")
-        self.bind_hover(self.buttons["ia"], "🛡️ ESCUDO ANTIVIRUS: Analizador de antivirus y WAF inteligente para mitigar ataques cibernéticos maliciosos.")
-        self.bind_hover(self.buttons["party"], "🏆 RUTEO PARTIDAS: Clasifica el tráfico según tipo de partida para mejorar la capacidad global de la infraestructura en un 25%.")
 
     # --- Sonidos ---
     def play_sound(self, sound_type):
@@ -498,7 +447,7 @@ class GameGUI:
 
         if self.selected_item is None:
             lbl = tk.Label(self.inspection_content, text="1. Haz clic en un Nodo para administrarlo.\n2. Compra enlaces e infraestructuras en el Canvas.\n3. Haz clic en Iniciar Jornada.",
-                           font=("Helvetica", 8, "bold"), fg=self.fg_dim, bg=self.bg_dark, justify="center", wraplength=280)
+                           font=self.ui_font(10, "bold"), fg=self.fg_dim, bg=self.bg_dark, justify="center", wraplength=350)
             lbl.pack(expand=True, fill="both", pady=20)
             return
 
@@ -508,12 +457,12 @@ class GameGUI:
 
         if item_type == "wan":
             lbl_title = tk.Label(self.inspection_content, text="🌐 INTERNET GLOBAL (WAN)",
-                                 font=("Helvetica", 10, "bold"), fg=self.color_blue, bg=self.bg_dark)
-            lbl_title.pack(anchor="w", pady=(2, 6))
+                                 font=self.ui_font(12, "bold"), fg=self.color_blue, bg=self.bg_dark)
+            lbl_title.pack(anchor="w", pady=(2, 8))
             
             lbl_desc = tk.Label(self.inspection_content, text="Administra enlaces de red internacionales. Compra fibra transoceánica para conectar nuevos mercados continentales.",
-                                font=("Helvetica", 8), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=300)
-            lbl_desc.pack(anchor="w", pady=(0, 10))
+                                font=self.ui_font(10), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
+            lbl_desc.pack(anchor="w", pady=(0, 12))
             
             continents_list = ["América", "Europa", "Asia"]
             for cont in continents_list:
@@ -521,55 +470,55 @@ class GameGUI:
                 is_unlocked = self.engine.is_continent_unlocked(cont)
                 
                 # Marco para cada continente
-                frame_cont = tk.Frame(self.inspection_content, bg=self.bg_card, padx=6, pady=4)
-                frame_cont.pack(fill="x", pady=2)
+                frame_cont = tk.Frame(self.inspection_content, bg=self.bg_card, padx=10, pady=6)
+                frame_cont.pack(fill="x", pady=3)
                 
-                lbl_name = tk.Label(frame_cont, text=cont.upper(), font=("Helvetica", 8, "bold"), fg=self.fg_light, bg=self.bg_card)
+                lbl_name = tk.Label(frame_cont, text=cont.upper(), font=self.ui_font(10, "bold"), fg=self.fg_light, bg=self.bg_card)
                 lbl_name.pack(side="left")
                 
                 if is_purchased:
-                    lbl_status = tk.Label(frame_cont, text="✅ CONECTADO", font=("Helvetica", 8, "bold"), fg=self.color_green, bg=self.bg_card)
+                    lbl_status = tk.Label(frame_cont, text="✅ CONECTADO", font=self.ui_font(10, "bold"), fg=self.color_green, bg=self.bg_card)
                     lbl_status.pack(side="right")
                 else:
                     if is_unlocked:
                         cost_cont = BALANCING_CONFIG["CONTINENT_UNLOCK_COST"]
-                        btn_buy = tk.Button(frame_cont, text=f"Conectar | ${cost_cont:.0f}", font=("Helvetica", 7, "bold"),
-                                            bg=self.color_blue, fg="#11111b", relief="flat", padx=5,
+                        btn_buy = tk.Button(frame_cont, text=f"Conectar | ${cost_cont:.0f}", font=self.ui_font(9, "bold"),
+                                            bg=self.color_blue, fg="#11111b", relief="flat", padx=8,
                                             state="disabled" if (is_active or self.engine.credits < cost_cont) else "normal",
                                             command=lambda c=cont: self.buy_continent_action(c))
                         btn_buy.pack(side="right")
                     else:
                         unlock_day = 5 if cont == "Europa" else 10
-                        lbl_status = tk.Label(frame_cont, text=f"🔒 Día {unlock_day}", font=("Helvetica", 7, "bold"), fg=self.fg_dim, bg=self.bg_card)
+                        lbl_status = tk.Label(frame_cont, text=f"🔒 Día {unlock_day}", font=self.ui_font(9, "bold"), fg=self.fg_dim, bg=self.bg_card)
                         lbl_status.pack(side="right")
 
         elif item_type == "continent":
             continent = kwargs["continent"]
             lbl_title = tk.Label(self.inspection_content, text=f"🌐 REGION: {continent.upper()}",
-                                 font=("Helvetica", 10, "bold"), fg=self.color_blue, bg=self.bg_dark)
-            lbl_title.pack(anchor="w", pady=(2, 6))
+                                 font=self.ui_font(12, "bold"), fg=self.color_blue, bg=self.bg_dark)
+            lbl_title.pack(anchor="w", pady=(2, 8))
             
             lbl_desc = tk.Label(self.inspection_content, text=f"Inaugura Data Centers en las ciudades de {continent} para enrutar el tráfico local de esta región.",
-                                font=("Helvetica", 8), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=300)
-            lbl_desc.pack(anchor="w", pady=(0, 10))
+                                font=self.ui_font(10), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
+            lbl_desc.pack(anchor="w", pady=(0, 12))
             
             cities = BALANCING_CONFIG["LOCATIONS"][continent]
             cost = BALANCING_CONFIG["OPEN_DATACENTER_COST"]
             for city in cities:
                 is_open = city in self.engine.datacenters
                 
-                frame_city = tk.Frame(self.inspection_content, bg=self.bg_card, padx=6, pady=4)
-                frame_city.pack(fill="x", pady=2)
+                frame_city = tk.Frame(self.inspection_content, bg=self.bg_card, padx=10, pady=6)
+                frame_city.pack(fill="x", pady=3)
                 
-                lbl_city = tk.Label(frame_city, text=city, font=("Helvetica", 8, "bold"), fg=self.fg_light, bg=self.bg_card)
+                lbl_city = tk.Label(frame_city, text=city, font=self.ui_font(10, "bold"), fg=self.fg_light, bg=self.bg_card)
                 lbl_city.pack(side="left")
                 
                 if is_open:
-                    lbl_status = tk.Label(frame_city, text="✅ ACTIVO", font=("Helvetica", 8, "bold"), fg=self.color_green, bg=self.bg_card)
+                    lbl_status = tk.Label(frame_city, text="✅ ACTIVO", font=self.ui_font(10, "bold"), fg=self.color_green, bg=self.bg_card)
                     lbl_status.pack(side="right")
                 else:
-                    btn_buy = tk.Button(frame_city, text=f"Abrir DC | ${cost:.0f}", font=("Helvetica", 7, "bold"),
-                                        bg=self.color_blue, fg="#11111b", relief="flat", padx=5,
+                    btn_buy = tk.Button(frame_city, text=f"Abrir DC | ${cost:.0f}", font=self.ui_font(9, "bold"),
+                                        bg=self.color_blue, fg="#11111b", relief="flat", padx=8,
                                         state="disabled" if (is_active or self.engine.credits < cost) else "normal",
                                         command=lambda r=city: self.open_dc_action(r))
                     btn_buy.pack(side="right")
@@ -579,8 +528,8 @@ class GameGUI:
             dc = self.engine.datacenters[region]
             
             lbl_title = tk.Label(self.inspection_content, text=f"🏢 DC: {region.upper()}",
-                                 font=("Helvetica", 10, "bold"), fg=self.color_blue, bg=self.bg_dark)
-            lbl_title.pack(anchor="w", pady=(2, 4))
+                                 font=self.ui_font(12, "bold"), fg=self.color_blue, bg=self.bg_dark)
+            lbl_title.pack(anchor="w", pady=(2, 6))
             
             stats_text = (
                 f"• Racks Ocupados: {len(dc['servers'])}/{dc['room_max_slots']}\n"
@@ -590,20 +539,20 @@ class GameGUI:
                 f"• Carga RAM: {dc['ram_stress']:.1f}%"
             )
             lbl_stats = tk.Label(self.inspection_content, text=stats_text,
-                                 font=("Helvetica", 8, "bold"), fg=self.fg_light, bg=self.bg_dark, justify="left")
-            lbl_stats.pack(anchor="w", pady=(2, 8))
+                                 font=self.ui_font(10, "bold"), fg=self.fg_light, bg=self.bg_dark, justify="left")
+            lbl_stats.pack(anchor="w", pady=(2, 10))
             
             cost_racks = BALANCING_CONFIG["UPGRADE_ROOM_SLOTS_COST"]
             racks_state = "normal" if (not is_active and self.engine.credits >= cost_racks) else "disabled"
             btn_racks = tk.Button(self.inspection_content, text=f"🏢 Expandir Racks (+2 slots) | ${cost_racks:.0f}",
-                                  font=("Helvetica", 8, "bold"), bg=self.bg_card, fg=self.fg_light, state=racks_state,
+                                  font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=racks_state,
                                   relief="flat", command=lambda: self.upgrade_dc_slots_action(region))
             btn_racks.pack(fill="x", pady=2)
             
             cost_cool = BALANCING_CONFIG["UPGRADE_ROOM_COOLING_COST"]
             cool_state = "normal" if (not is_active and self.engine.credits >= cost_cool) else "disabled"
             btn_cool = tk.Button(self.inspection_content, text=f"❄️ Climatización (+1 Lvl) | ${cost_cool:.0f}",
-                                 font=("Helvetica", 8, "bold"), bg=self.bg_card, fg=self.fg_light, state=cool_state,
+                                 font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=cool_state,
                                  relief="flat", command=lambda: self.upgrade_dc_cooling_action(region))
             btn_cool.pack(fill="x", pady=2)
             
@@ -611,7 +560,7 @@ class GameGUI:
             has_slots = len(dc['servers']) < dc['room_max_slots']
             srv_state = "normal" if (not is_active and has_slots and self.engine.credits >= cost_srv) else "disabled"
             btn_srv = tk.Button(self.inspection_content, text=f"🚀 Instalar Servidor físico | ${cost_srv:.0f}",
-                                font=("Helvetica", 8, "bold"), bg=self.bg_card, fg=self.fg_light, state=srv_state,
+                                font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=srv_state,
                                 relief="flat", command=lambda: self.buy_server_action(region))
             btn_srv.pack(fill="x", pady=2)
 
@@ -627,8 +576,8 @@ class GameGUI:
             srv = dc["servers"][idx]
             
             lbl_title = tk.Label(self.inspection_content, text=f"🖥️ {srv['name']} ({region.upper()})",
-                                 font=("Helvetica", 10, "bold"), fg=self.color_blue, bg=self.bg_dark)
-            lbl_title.pack(anchor="w", pady=(2, 4))
+                                 font=self.ui_font(12, "bold"), fg=self.color_blue, bg=self.bg_dark)
+            lbl_title.pack(anchor="w", pady=(2, 6))
             
             status_str = f"REINICIANDO ({srv['offline_timer']}s)" if srv['offline_timer'] > 0 else "ONLINE"
             
@@ -640,33 +589,33 @@ class GameGUI:
             )
             
             lbl_stats = tk.Label(self.inspection_content, text=stats_text,
-                                 font=("Helvetica", 8, "bold"), fg=self.fg_light, bg=self.bg_dark, justify="left")
-            lbl_stats.pack(anchor="w", pady=(2, 8))
+                                 font=self.ui_font(10, "bold"), fg=self.fg_light, bg=self.bg_dark, justify="left")
+            lbl_stats.pack(anchor="w", pady=(2, 10))
             
             cost_hw = BALANCING_CONFIG["UPGRADE_SERVER_HW_COST"]
             hw_state = "normal" if (not is_active and self.engine.credits >= cost_hw) else "disabled"
             btn_hw = tk.Button(self.inspection_content, text=f"🚀 Mejorar Computación (+600 req/s) | ${cost_hw:.0f}",
-                               font=("Helvetica", 8, "bold"), bg=self.bg_card, fg=self.fg_light, state=hw_state,
+                               font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=hw_state,
                                relief="flat", command=lambda: self.upgrade_srv_hw_action(region, idx))
             btn_hw.pack(fill="x", pady=2)
             
             cost_cool = BALANCING_CONFIG["UPGRADE_SERVER_COOLING_COST"]
             cool_state = "normal" if (not is_active and self.engine.credits >= cost_cool) else "disabled"
             btn_cool = tk.Button(self.inspection_content, text=f"❄️ Mejorar Disipador (Enfriar) | ${cost_cool:.0f}",
-                                 font=("Helvetica", 8, "bold"), bg=self.bg_card, fg=self.fg_light, state=cool_state,
+                                 font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=cool_state,
                                  relief="flat", command=lambda: self.upgrade_srv_cooling_action(region, idx))
             btn_cool.pack(fill="x", pady=2)
             
             reboot_state = "normal" if (is_active and not self.engine.is_paused and srv['offline_timer'] == 0) else "disabled"
             btn_reboot = tk.Button(self.inspection_content, text="🔄 Reiniciar Máquina (Flush caché)",
-                                   font=("Helvetica", 8, "bold"), bg=self.bg_card, fg=self.color_yellow, state=reboot_state,
+                                   font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.color_yellow, state=reboot_state,
                                    relief="flat", command=lambda: self.reboot_srv_action(region, idx))
             btn_reboot.pack(fill="x", pady=2)
 
         # Botón de salir del panel
-        btn_close = tk.Button(self.inspection_content, text="✖ Cerrar Panel / Cancelar", font=("Helvetica", 8, "bold"),
-                              bg=self.bg_card, fg=self.color_red, relief="flat", command=self.clear_selection)
-        btn_close.pack(fill="x", pady=(10, 2))
+        btn_close = tk.Button(self.inspection_content, text="✖ Cerrar Panel / Cancelar", font=self.ui_font(10, "bold"),
+                      bg=self.bg_card, fg=self.color_red, relief="flat", command=self.clear_selection)
+        btn_close.pack(fill="x", pady=(12, 2))
 
     # --- Acciones del Panel ---
     def buy_continent_action(self, continent):
@@ -775,7 +724,7 @@ class GameGUI:
         wan_oval_id = self.canvas.create_oval(internet_x - internet_radius, internet_y - internet_radius,
                                 internet_x + internet_radius, internet_y + internet_radius,
                                 fill="#89b4fa", outline="#ffffff", width=2, tags=tag_id_wan)
-        self.canvas.create_text(internet_x, internet_y, text="WAN", font=("Helvetica", 8, "bold"), fill="#11111b", tags=(tag_id_wan, "text", "size_8"))
+        self.canvas.create_text(internet_x, internet_y, text="WAN", font=self.ui_font(8, "bold"), fill="#11111b", tags=(tag_id_wan, "text", "size_8"))
         
         # Enlazar clic y hover para la WAN
         self.canvas.tag_bind(tag_id_wan, "<Button-1>", self.on_wan_click)
@@ -823,7 +772,7 @@ class GameGUI:
             # Círculo de Continente
             cont_oval_id = self.canvas.create_oval(cont_x - cont_radius, cont_y - cont_radius, cont_x + cont_radius, cont_y + cont_radius,
                                     fill="#1e1e2e", outline=line_color, width=2, tags=tag_id_cont)
-            self.canvas.create_text(cont_x, cont_y, text=cont.upper(), font=("Helvetica", 7, "bold"), fill=self.fg_light, tags=(tag_id_cont, "text", "size_7"))
+            self.canvas.create_text(cont_x, cont_y, text=cont.upper(), font=self.ui_font(7, "bold"), fill=self.fg_light, tags=(tag_id_cont, "text", "size_7"))
             
             # Enlazar clic y hover para el Continente
             self.canvas.tag_bind(tag_id_cont, "<Button-1>", lambda event, c=cont: self.on_continent_click(event, c))
@@ -853,7 +802,7 @@ class GameGUI:
                 # Círculo de la Ciudad
                 dc_oval_id = self.canvas.create_oval(cx - city_radius, cy - city_radius, cx + city_radius, cy + city_radius,
                                                      fill=dc_color, outline=border_color, width=2, tags=tag_id_dc)
-                self.canvas.create_text(cx, cy, text=dc_text, font=("Helvetica", 6, "bold"), fill=text_color, justify="center", tags=(tag_id_dc, "text", "size_6"))
+                self.canvas.create_text(cx, cy, text=dc_text, font=self.ui_font(6, "bold"), fill=text_color, justify="center", tags=(tag_id_dc, "text", "size_6"))
                 
                 # Enlazar clic y hover para el Data Center
                 self.canvas.tag_bind(tag_id_dc, "<Button-1>", lambda event, c=city: self.on_dc_click(event, c))
@@ -895,18 +844,18 @@ class GameGUI:
                         srv_oval_id = self.canvas.create_oval(sx - server_radius, server_y - server_radius,
                                                               sx + server_radius, server_y + server_radius,
                                                               fill=srv_color, outline="#ffffff", width=1.5, tags=tag_id_srv)
-                        self.canvas.create_text(sx, server_y, text=f"S{j+1}", font=("Helvetica", 6, "bold"), fill="#11111b", tags=(tag_id_srv, "text", "size_6"))
+                        self.canvas.create_text(sx, server_y, text=f"S{j+1}", font=self.ui_font(6, "bold"), fill="#11111b", tags=(tag_id_srv, "text", "size_6"))
                         
                         ping_text = "OFF" if s["offline_timer"] > 0 else f"{s['ping']:.0f}ms"
-                        self.canvas.create_text(sx, server_y + server_radius + 8, text=ping_text, font=("Helvetica", 6, "bold"), fill=self.fg_light, tags=("text", "size_6"))
-                        self.canvas.create_text(sx, server_y + server_radius + 16, text=label, font=("Helvetica", 5, "bold"), fill=self.fg_dim, tags=("text", "size_5"))
+                        self.canvas.create_text(sx, server_y + server_radius + 8, text=ping_text, font=self.ui_font(6, "bold"), fill=self.fg_light, tags=("text", "size_6"))
+                        self.canvas.create_text(sx, server_y + server_radius + 16, text=label, font=self.ui_font(5, "bold"), fill=self.fg_dim, tags=("text", "size_5"))
                         
                         # Enlazar clic y hover para el Servidor
                         self.canvas.tag_bind(tag_id_srv, "<Button-1>", lambda event, c=city, idx=j: self.on_srv_click(event, c, idx))
                         self.canvas.tag_bind(tag_id_srv, "<Enter>", lambda event, oid=srv_oval_id: self.canvas.itemconfigure(oid, outline="#f9e2af", width=4))
                         self.canvas.tag_bind(tag_id_srv, "<Leave>", lambda event, oid=srv_oval_id: self.canvas.itemconfigure(oid, outline="#ffffff", width=1.5))
                 else:
-                    self.canvas.create_text(cx, cy + city_radius + 15, text="Sin Servidores", font=("Helvetica", 6, "italic"), fill=self.fg_dim, tags=("text", "size_6", "style_italic"))
+                    self.canvas.create_text(cx, cy + city_radius + 15, text="Sin Servidores", font=self.ui_font(6, "italic"), fill=self.fg_dim, tags=("text", "size_6", "style_italic"))
 
         # 4. Dibujar DDoS (Hacia la ciudad atacada)
         if self.engine.traffic_ddos > 0:
@@ -977,14 +926,6 @@ class GameGUI:
         else:
             self.cards["ceo"].config(fg=self.color_green)
             
-        # 3. Desglose de Tráfico por Ciudad
-        reg_text = "📊 TRÁFICO POR CIUDAD:\n"
-        for city in self.engine.all_cities:
-            t_city = self.engine.traffic_users_regional.get(city, 0)
-            p_city = self.engine.regional_pings.get(city, 20.0)
-            reg_text += f"• {city}: {t_city} req/s ({p_city:.0f} ms)\n"
-        self.lbl_traffic_breakdown.config(text=reg_text.strip())
-            
         # 4. Progressbars de Estrés
         if self.engine.is_downtime:
             self.lbl_cpu_text.config(text=f"ESTRES CPU: COLA DE CAIDA ({self.engine.cpu_stress:.1f}%)", fg=self.color_red)
@@ -1019,7 +960,7 @@ class GameGUI:
                 self.buttons["autoscale"].config(text="☁️ Licencia Cloud [ON] | -$5/t\nAuto-Scaling activo por carga.", state="normal", bg=self.color_green, fg="#11111b")
             else:
                 self.buttons["autoscale"].config(text="☁️ Licencia Cloud [OFF] | -$0/t\nAuto-Scaling inactivo.", state="normal", bg=self.bg_card, fg=self.fg_light)
-        elif is_active or self.engine.credits < BALANCING_CONFIG["UPGRADE_AUTOSCALE_COST"]:
+        elif self.engine.credits < BALANCING_CONFIG["UPGRADE_AUTOSCALE_COST"]:
             self.buttons["autoscale"].config(text=f"☁️ Compra Licencia Cloud | ${BALANCING_CONFIG['UPGRADE_AUTOSCALE_COST']:.0f}\nHabilita el escalado automático.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
         else:
             self.buttons["autoscale"].config(text=f"☁️ Compra Licencia Cloud | ${BALANCING_CONFIG['UPGRADE_AUTOSCALE_COST']:.0f}\nHabilita el escalado automático.", state="normal", bg=self.bg_card, fg=self.fg_light)
@@ -1036,7 +977,7 @@ class GameGUI:
                 self.buttons["ia"].config(text="🛡️ Escudo Antivirus [ON] | -$15/t\nMitigador DDoS activo.", state="normal", bg=self.color_green, fg="#11111b")
             else:
                 self.buttons["ia"].config(text="🛡️ Escudo Antivirus [OFF] | -$0/t\nMitigador DDoS inactivo.", state="normal", bg=self.bg_card, fg=self.fg_light)
-        elif is_active or self.engine.credits < BALANCING_CONFIG["UPGRADE_IA_ANALYZER_COST"]:
+        elif self.engine.credits < BALANCING_CONFIG["UPGRADE_IA_ANALYZER_COST"]:
             self.buttons["ia"].config(text=f"🛡️ Compra Escudo Antivirus | ${BALANCING_CONFIG['UPGRADE_IA_ANALYZER_COST']:.0f}\nFiltra tráfico DDoS.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
         else:
             self.buttons["ia"].config(text=f"🛡️ Compra Escudo Antivirus | ${BALANCING_CONFIG['UPGRADE_IA_ANALYZER_COST']:.0f}\nFiltra tráfico DDoS.", state="normal", bg=self.bg_card, fg=self.fg_light)

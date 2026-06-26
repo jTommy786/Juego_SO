@@ -185,7 +185,7 @@ class EconomyManager:
         return False
 
     def buy_upgrade(self, key):
-        if self.engine.workday_active:
+        if self.engine.workday_active and key not in ["autoscale", "ia"]:
             return False
         
         if key == "autoscale" and not self.auto_scale_purchased and self.credits >= BALANCING_CONFIG["UPGRADE_AUTOSCALE_COST"]:
