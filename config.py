@@ -20,15 +20,9 @@ BALANCING_CONFIG = {
     
     # NUEVAS MEJORAS DE SALA Y NODOS
     "OPEN_DATACENTER_COST": 3500.0,         # Abrir un nuevo Data Center regional
-    "UPGRADE_ROOM_SLOTS_COST": 1500.0,       # Expandir racks (+2 slots)
-    "UPGRADE_ROOM_COOLING_COST": 1200.0,     # Mejorar aire acondicionado central (+1 lvl)
-    "UPGRADE_SERVER_HW_COST": 400.0,         # Mejorar procesamiento del servidor individual
-    "UPGRADE_SERVER_COOLING_COST": 300.0,    # Mejorar disipador individual del servidor
     
     # Límites Base
-    "ROOM_SLOTS_BASE": 3,                    # Inicias con espacio máximo para 3 servidores
     "CAPACITY_BASE": 1500.0,                 # Capacidad inicial del Servidor 1 (req/s)
-    "CAPACITY_PER_SERVER_LVL": 600.0,        # Capacidad añadida por nivel de hardware (HW)
     "AUTOSCALE_MULTIPLIER": 1.35,            
     "AUTOSCALE_TICK_COST": 3.0,              
     
@@ -53,9 +47,9 @@ BALANCING_CONFIG = {
     # Costos Fijos de Mantenimiento Diario (Descontados al finalizar la jornada)
     "DAILY_MAINTENANCE_BASE_SERVER": 50.0,
     "DAILY_MAINTENANCE_PER_PHYSICAL_SERVER": 80.0,
-    "DAILY_MAINTENANCE_ROOM_COOLING": 60.0,
     "DAILY_MAINTENANCE_AUTOSCALE": 150.0,
     "DAILY_MAINTENANCE_GEO_BALANCER": 200.0,
     "DAILY_MAINTENANCE_IA_ANALYZER": 250.0,
     "DAILY_MAINTENANCE_PARTY_ROUTING": 300.0
 }
+

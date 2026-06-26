@@ -1,10 +1,6 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox
 import random
-try:
-    import winsound
-except ImportError:
-    winsound = None
 from config import BALANCING_CONFIG
 from core.engine import GameEngine
 
@@ -12,7 +8,6 @@ class GameGUI:
     def __init__(self, root):
         self.root = root
         self.root.withdraw()  
-        self.ui_scale = 2.0
         
         # Configurar la ventana principal (root) como anclaje de la barra de tareas
         self.root.title("Ping Zero: Server Manager")
@@ -22,7 +17,6 @@ class GameGUI:
         self.window = tk.Toplevel(self.root)
         self.window.title("Ping Zero: Server Manager")
         self.window.configure(bg="#0c0d12")
-        self.window.tk.call("tk", "scaling", self.ui_scale)
         
         # Eliminar decoración nativa del SO
         self.window.overrideredirect(True)
@@ -95,11 +89,19 @@ class GameGUI:
             y = self.window.winfo_y() - self.drag_data["y"] + event.y
             self.window.geometry(f"+{x}+{y}")
 
-    def ui_font(self, size, *styles, family="Helvetica"):
-        return (family, int(size * self.ui_scale), *styles)
+    def minimize_window(self):
+        self.root.iconify()
 
-    def ui_mono_font(self, size, *styles):
-        return ("Consolas", int(size * self.ui_scale), *styles)
+    def toggle_maximize(self):
+        if self.is_maximized:
+            self.window.geometry(self.normal_geometry)
+            self.is_maximized = False
+        else:
+            self.normal_geometry = self.window.geometry()
+            screen_w = self.window.winfo_screenwidth()
+            screen_h = self.window.winfo_screenheight()
+            self.window.geometry(f"{screen_w}x{screen_h}+0+0")
+            self.is_maximized = True
 
     def on_root_map(self, event):
         if event.widget == self.root:
@@ -120,33 +122,39 @@ class GameGUI:
         self.title_bar.bind("<ButtonPress-1>", self.start_drag)
         self.title_bar.bind("<B1-Motion>", self.drag_window)
         
-        title_label = tk.Label(self.title_bar, text=" ⚙️ PING ZERO: Server Manager", font=self.ui_font(5, "bold"), fg=self.color_blue, bg=self.bg_panel)
+        title_label = tk.Label(self.title_bar, text=" ⚙️ PING ZERO: Server Manager", font=("Helvetica", 9, "bold"), fg=self.color_blue, bg=self.bg_panel)
         title_label.pack(side="left", padx=20)
         title_label.bind("<ButtonPress-1>", self.start_drag)
         title_label.bind("<B1-Motion>", self.drag_window)
         
-        btn_style = {"font": self.ui_font(5, "bold"), "bg": self.bg_panel, "fg": self.fg_light, "relief": "flat", "width": 4, "height": 1}
+        btn_style = {"font": ("Helvetica", 9, "bold"), "bg": self.bg_panel, "fg": self.fg_light, "relief": "flat", "width": 4, "height": 1}
         
-        # Solo botón de salida
-        self.btn_close = tk.Button(self.title_bar, text="Salir", command=self.root.destroy, **btn_style)
-        self.btn_close.pack(side="right", padx=10)
+        self.btn_close = tk.Button(self.title_bar, text="X", command=self.root.destroy, **btn_style)
+        self.btn_close.pack(side="right", padx=(2, 10))
         self.btn_close.bind("<Enter>", lambda e: self.btn_close.config(bg=self.color_red, fg="#11111b"))
         self.btn_close.bind("<Leave>", lambda e: self.btn_close.config(bg=self.bg_panel, fg=self.fg_light))
+
+        self.btn_max = tk.Button(self.title_bar, text="□", command=self.toggle_maximize, **btn_style)
+        self.btn_max.pack(side="right", padx=2)
+        self.btn_max.bind("<Enter>", lambda e: self.btn_max.config(bg=self.bg_card))
+        self.btn_max.bind("<Leave>", lambda e: self.btn_max.config(bg=self.bg_panel))
+
+        self.btn_min = tk.Button(self.title_bar, text="_", command=self.minimize_window, **btn_style)
+        self.btn_min.pack(side="right", padx=2)
+        self.btn_min.bind("<Enter>", lambda e: self.btn_min.config(bg=self.bg_card))
+        self.btn_min.bind("<Leave>", lambda e: self.btn_min.config(bg=self.bg_panel))
 
         # 1. Header Frame
         header = tk.Frame(self.window, bg=self.bg_panel, height=64)
         header.pack(fill="x", side="top")
         
-        self.lbl_time = tk.Label(header, text="📅 DIA: 1 [PLANIFICACION]", font=self.ui_font(7, "bold"), fg=self.color_yellow, bg=self.bg_panel)
+        self.lbl_time = tk.Label(header, text="📅 DIA: 1 [PLANIFICACION]", font=("Helvetica", 11, "bold"), fg=self.color_yellow, bg=self.bg_panel)
         self.lbl_time.pack(side="left", padx=(20, 12), pady=11)
         
-        self.lbl_forecast = tk.Label(header, text="📈 PRONOSTICO: Carga normal", font=self.ui_font(7, "bold"), fg=self.color_blue, bg=self.bg_panel)
+        self.lbl_forecast = tk.Label(header, text="📈 PRONOSTICO: Carga normal", font=("Helvetica", 11, "bold"), fg=self.color_blue, bg=self.bg_panel)
         self.lbl_forecast.pack(side="left", padx=12, pady=11)
         
-        self.lbl_rank = tk.Label(header, text="🏆 RANGO: SysAdmin Junior", font=self.ui_font(7, "bold"), fg=self.color_yellow, bg=self.bg_panel)
-        self.lbl_rank.pack(side="left", padx=12, pady=11)
-        
-        self.lbl_autoscale_banner = tk.Label(header, text="AUTO-SCALING: INACTIVO", font=self.ui_font(6, "bold"), fg=self.fg_dim, bg=self.bg_panel)
+        self.lbl_autoscale_banner = tk.Label(header, text="AUTO-SCALING: INACTIVO", font=("Helvetica", 10, "bold"), fg=self.fg_dim, bg=self.bg_panel)
         self.lbl_autoscale_banner.pack(side="right", padx=20, pady=11)
 
         # 2. Contenedor Principal (2 Columnas)
@@ -241,7 +249,7 @@ class GameGUI:
         log_lf.pack(side="bottom", fill="x", expand=False)
         log_lf.pack_propagate(False)
         
-        self.txt_logs = tk.Text(log_lf, bg="#0d0e15", fg=self.color_blue, font=self.ui_mono_font(8), bd=0, state="disabled")
+        self.txt_logs = tk.Text(log_lf, bg="#0d0e15", fg=self.color_blue, font=("Consolas", 10), bd=0, state="disabled")
         self.txt_logs.pack(fill="both", expand=True, padx=5, pady=(0, 4))
 
         # 3.2 Sistema de Pestañas (ttk.Notebook)
@@ -280,27 +288,7 @@ class GameGUI:
             btn.pack(side="top", fill="x", pady=3)
             self.buttons[key] = btn
 
-    # --- Sonidos ---
-    def play_sound(self, sound_type):
-        if winsound is None:
-            try:
-                self.window.bell()
-            except Exception:
-                pass
-            return
-        try:
-            if sound_type == "success":
-                winsound.Beep(800, 100)
-            elif sound_type == "error":
-                winsound.Beep(300, 300)
-            elif sound_type == "alert":
-                winsound.Beep(450, 150)
-                winsound.Beep(450, 150)
-        except Exception:
-            try:
-                self.window.bell()
-            except Exception:
-                pass
+
 
     # --- Logs ---
     def log(self, msg, is_alert=False):
@@ -308,58 +296,8 @@ class GameGUI:
         self.txt_logs.insert(tk.END, f"{'[ALERT] ' if is_alert else '[INFO] '}{msg}\n")
         self.txt_logs.see(tk.END)
         self.txt_logs.configure(state="disabled")
-        if is_alert:
-            if "CRASH" in msg or "DDoS" in msg or "SLA" in msg or "LATENCIA" in msg:
-                self.play_sound("alert")
-            else:
-                self.play_sound("error")
 
-    # --- Persistencia de Partida ---
-    def save_game_gui(self):
-        if self.engine.workday_active:
-            self.log("No puedes guardar la partida durante la jornada laboral.", True)
-            messagebox.showerror("Error", "No puedes guardar la partida mientras el turno esté en curso.", parent=self.window)
-            return
-            
-        filename = filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("Archivos JSON", "*.json")],
-            initialfile="savegame.json",
-            title="Guardar Partida",
-            parent=self.window
-        )
-        if filename:
-            if self.engine.save_game(filename):
-                self.log("Estado de la red guardado correctamente.", False)
-                self.play_sound("success")
-                messagebox.showinfo("Partida Guardada", "La partida se ha guardado correctamente.", parent=self.window)
-            else:
-                self.log("Error al guardar la partida.", True)
-                messagebox.showerror("Error", "Hubo un error al intentar guardar la partida.", parent=self.window)
 
-    def load_game_gui(self):
-        if self.engine.workday_active:
-            self.log("No puedes cargar una partida durante la jornada laboral.", True)
-            messagebox.showerror("Error", "No puedes cargar una partida mientras el turno esté en curso.", parent=self.window)
-            return
-            
-        filename = filedialog.askopenfilename(
-            defaultextension=".json",
-            filetypes=[("Archivos JSON", "*.json")],
-            title="Cargar Partida",
-            parent=self.window
-        )
-        if filename:
-            if self.engine.load_game(filename):
-                self.log("Partida cargada correctamente. Reanudando simulación...", False)
-                self.play_sound("success")
-                self.clear_selection()
-                self.update_ui()
-                self.center_camera()
-                messagebox.showinfo("Partida Cargada", "La partida se ha cargado correctamente.", parent=self.window)
-            else:
-                self.log("Error al cargar la partida o archivo corrupto.", True)
-                messagebox.showerror("Error", "No se pudo cargar la partida. El archivo podría estar corrupto o no existir.", parent=self.window)
 
     # --- Lógica de Paneo y Zoom ---
     def center_camera(self):
@@ -447,7 +385,7 @@ class GameGUI:
 
         if self.selected_item is None:
             lbl = tk.Label(self.inspection_content, text="1. Haz clic en un Nodo para administrarlo.\n2. Compra enlaces e infraestructuras en el Canvas.\n3. Haz clic en Iniciar Jornada.",
-                           font=self.ui_font(10, "bold"), fg=self.fg_dim, bg=self.bg_dark, justify="center", wraplength=350)
+                           font=("Helvetica", 12, "bold"), fg=self.fg_dim, bg=self.bg_dark, justify="center", wraplength=350)
             lbl.pack(expand=True, fill="both", pady=20)
             return
 
@@ -457,11 +395,11 @@ class GameGUI:
 
         if item_type == "wan":
             lbl_title = tk.Label(self.inspection_content, text="🌐 INTERNET GLOBAL (WAN)",
-                                 font=self.ui_font(12, "bold"), fg=self.color_blue, bg=self.bg_dark)
+                                 font=("Helvetica", 14, "bold"), fg=self.color_blue, bg=self.bg_dark)
             lbl_title.pack(anchor="w", pady=(2, 8))
             
             lbl_desc = tk.Label(self.inspection_content, text="Administra enlaces de red internacionales. Compra fibra transoceánica para conectar nuevos mercados continentales.",
-                                font=self.ui_font(10), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
+                                font=("Helvetica", 12), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
             lbl_desc.pack(anchor="w", pady=(0, 12))
             
             continents_list = ["América", "Europa", "Asia"]
@@ -473,33 +411,33 @@ class GameGUI:
                 frame_cont = tk.Frame(self.inspection_content, bg=self.bg_card, padx=10, pady=6)
                 frame_cont.pack(fill="x", pady=3)
                 
-                lbl_name = tk.Label(frame_cont, text=cont.upper(), font=self.ui_font(10, "bold"), fg=self.fg_light, bg=self.bg_card)
+                lbl_name = tk.Label(frame_cont, text=cont.upper(), font=("Helvetica", 12, "bold"), fg=self.fg_light, bg=self.bg_card)
                 lbl_name.pack(side="left")
                 
                 if is_purchased:
-                    lbl_status = tk.Label(frame_cont, text="✅ CONECTADO", font=self.ui_font(10, "bold"), fg=self.color_green, bg=self.bg_card)
+                    lbl_status = tk.Label(frame_cont, text="✅ CONECTADO", font=("Helvetica", 12, "bold"), fg=self.color_green, bg=self.bg_card)
                     lbl_status.pack(side="right")
                 else:
                     if is_unlocked:
                         cost_cont = BALANCING_CONFIG["CONTINENT_UNLOCK_COST"]
-                        btn_buy = tk.Button(frame_cont, text=f"Conectar | ${cost_cont:.0f}", font=self.ui_font(9, "bold"),
+                        btn_buy = tk.Button(frame_cont, text=f"Conectar | ${cost_cont:.0f}", font=("Helvetica", 11, "bold"),
                                             bg=self.color_blue, fg="#11111b", relief="flat", padx=8,
                                             state="disabled" if (is_active or self.engine.credits < cost_cont) else "normal",
                                             command=lambda c=cont: self.buy_continent_action(c))
                         btn_buy.pack(side="right")
                     else:
                         unlock_day = 5 if cont == "Europa" else 10
-                        lbl_status = tk.Label(frame_cont, text=f"🔒 Día {unlock_day}", font=self.ui_font(9, "bold"), fg=self.fg_dim, bg=self.bg_card)
+                        lbl_status = tk.Label(frame_cont, text=f"🔒 Día {unlock_day}", font=("Helvetica", 11, "bold"), fg=self.fg_dim, bg=self.bg_card)
                         lbl_status.pack(side="right")
 
         elif item_type == "continent":
             continent = kwargs["continent"]
             lbl_title = tk.Label(self.inspection_content, text=f"🌐 REGION: {continent.upper()}",
-                                 font=self.ui_font(12, "bold"), fg=self.color_blue, bg=self.bg_dark)
+                                 font=("Helvetica", 14, "bold"), fg=self.color_blue, bg=self.bg_dark)
             lbl_title.pack(anchor="w", pady=(2, 8))
             
             lbl_desc = tk.Label(self.inspection_content, text=f"Inaugura Data Centers en las ciudades de {continent} para enrutar el tráfico local de esta región.",
-                                font=self.ui_font(10), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
+                                font=("Helvetica", 12), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
             lbl_desc.pack(anchor="w", pady=(0, 12))
             
             cities = BALANCING_CONFIG["LOCATIONS"][continent]
@@ -510,14 +448,14 @@ class GameGUI:
                 frame_city = tk.Frame(self.inspection_content, bg=self.bg_card, padx=10, pady=6)
                 frame_city.pack(fill="x", pady=3)
                 
-                lbl_city = tk.Label(frame_city, text=city, font=self.ui_font(10, "bold"), fg=self.fg_light, bg=self.bg_card)
+                lbl_city = tk.Label(frame_city, text=city, font=("Helvetica", 12, "bold"), fg=self.fg_light, bg=self.bg_card)
                 lbl_city.pack(side="left")
                 
                 if is_open:
-                    lbl_status = tk.Label(frame_city, text="✅ ACTIVO", font=self.ui_font(10, "bold"), fg=self.color_green, bg=self.bg_card)
+                    lbl_status = tk.Label(frame_city, text="✅ ACTIVO", font=("Helvetica", 12, "bold"), fg=self.color_green, bg=self.bg_card)
                     lbl_status.pack(side="right")
                 else:
-                    btn_buy = tk.Button(frame_city, text=f"Abrir DC | ${cost:.0f}", font=self.ui_font(9, "bold"),
+                    btn_buy = tk.Button(frame_city, text=f"Abrir DC | ${cost:.0f}", font=("Helvetica", 11, "bold"),
                                         bg=self.color_blue, fg="#11111b", relief="flat", padx=8,
                                         state="disabled" if (is_active or self.engine.credits < cost) else "normal",
                                         command=lambda r=city: self.open_dc_action(r))
@@ -528,92 +466,29 @@ class GameGUI:
             dc = self.engine.datacenters[region]
             
             lbl_title = tk.Label(self.inspection_content, text=f"🏢 DC: {region.upper()}",
-                                 font=self.ui_font(12, "bold"), fg=self.color_blue, bg=self.bg_dark)
+                                 font=("Helvetica", 14, "bold"), fg=self.color_blue, bg=self.bg_dark)
             lbl_title.pack(anchor="w", pady=(2, 6))
             
-            stats_text = (
-                f"• Racks Ocupados: {len(dc['servers'])}/{dc['room_max_slots']}\n"
-                f"• Climatización central: Nivel {dc['room_cooling_lvl']}\n"
-                f"• Temperatura Central: {dc['room_temp']:.1f}°C\n"
-                f"• Carga CPU: {dc['cpu_stress']:.1f}%\n"
-                f"• Carga RAM: {dc['ram_stress']:.1f}%"
+            desc_text = (
+                f"Data Center regional ubicado en {region}.\n"
+                f"Procesa el tráfico de la red local para mejorar los tiempos de respuesta.\n\n"
+                f"• Servidores Instalados: {dc.get('servers_count', 0)}\n"
+                f"• Carga CPU: {dc.get('cpu_stress', 0.0):.1f}%\n"
+                f"• Carga RAM: {dc.get('ram_stress', 0.0):.1f}%"
             )
-            lbl_stats = tk.Label(self.inspection_content, text=stats_text,
-                                 font=self.ui_font(10, "bold"), fg=self.fg_light, bg=self.bg_dark, justify="left")
-            lbl_stats.pack(anchor="w", pady=(2, 10))
-            
-            cost_racks = BALANCING_CONFIG["UPGRADE_ROOM_SLOTS_COST"]
-            racks_state = "normal" if (not is_active and self.engine.credits >= cost_racks) else "disabled"
-            btn_racks = tk.Button(self.inspection_content, text=f"🏢 Expandir Racks (+2 slots) | ${cost_racks:.0f}",
-                                  font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=racks_state,
-                                  relief="flat", command=lambda: self.upgrade_dc_slots_action(region))
-            btn_racks.pack(fill="x", pady=2)
-            
-            cost_cool = BALANCING_CONFIG["UPGRADE_ROOM_COOLING_COST"]
-            cool_state = "normal" if (not is_active and self.engine.credits >= cost_cool) else "disabled"
-            btn_cool = tk.Button(self.inspection_content, text=f"❄️ Climatización (+1 Lvl) | ${cost_cool:.0f}",
-                                 font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=cool_state,
-                                 relief="flat", command=lambda: self.upgrade_dc_cooling_action(region))
-            btn_cool.pack(fill="x", pady=2)
+            lbl_desc = tk.Label(self.inspection_content, text=desc_text,
+                                font=("Helvetica", 12), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
+            lbl_desc.pack(anchor="w", pady=(2, 12))
             
             cost_srv = BALANCING_CONFIG["UPGRADE_SERVER_COST"]
-            has_slots = len(dc['servers']) < dc['room_max_slots']
-            srv_state = "normal" if (not is_active and has_slots and self.engine.credits >= cost_srv) else "disabled"
-            btn_srv = tk.Button(self.inspection_content, text=f"🚀 Instalar Servidor físico | ${cost_srv:.0f}",
-                                font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=srv_state,
+            srv_state = "normal" if (not is_active and self.engine.credits >= cost_srv) else "disabled"
+            btn_srv = tk.Button(self.inspection_content, text=f"🚀 Instalar Servidor | ${cost_srv:.0f}",
+                                font=("Helvetica", 11, "bold"), bg=self.bg_card, fg=self.fg_light, state=srv_state,
                                 relief="flat", command=lambda: self.buy_server_action(region))
             btn_srv.pack(fill="x", pady=2)
 
-        elif item_type == "server":
-            region = kwargs["region"]
-            idx = kwargs["index"]
-            dc = self.engine.datacenters[region]
-            
-            if idx >= len(dc["servers"]):
-                self.clear_selection()
-                return
-                
-            srv = dc["servers"][idx]
-            
-            lbl_title = tk.Label(self.inspection_content, text=f"🖥️ {srv['name']} ({region.upper()})",
-                                 font=self.ui_font(12, "bold"), fg=self.color_blue, bg=self.bg_dark)
-            lbl_title.pack(anchor="w", pady=(2, 6))
-            
-            status_str = f"REINICIANDO ({srv['offline_timer']}s)" if srv['offline_timer'] > 0 else "ONLINE"
-            
-            stats_text = (
-                f"• Estado: {status_str}\n"
-                f"• Temperatura: {srv['temp']:.1f}°C\n"
-                f"• Computación (HW): Nivel {srv['hw_lvl']}\n"
-                f"• Disipador (Cool): Nivel {srv['cool_lvl']}"
-            )
-            
-            lbl_stats = tk.Label(self.inspection_content, text=stats_text,
-                                 font=self.ui_font(10, "bold"), fg=self.fg_light, bg=self.bg_dark, justify="left")
-            lbl_stats.pack(anchor="w", pady=(2, 10))
-            
-            cost_hw = BALANCING_CONFIG["UPGRADE_SERVER_HW_COST"]
-            hw_state = "normal" if (not is_active and self.engine.credits >= cost_hw) else "disabled"
-            btn_hw = tk.Button(self.inspection_content, text=f"🚀 Mejorar Computación (+600 req/s) | ${cost_hw:.0f}",
-                               font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=hw_state,
-                               relief="flat", command=lambda: self.upgrade_srv_hw_action(region, idx))
-            btn_hw.pack(fill="x", pady=2)
-            
-            cost_cool = BALANCING_CONFIG["UPGRADE_SERVER_COOLING_COST"]
-            cool_state = "normal" if (not is_active and self.engine.credits >= cost_cool) else "disabled"
-            btn_cool = tk.Button(self.inspection_content, text=f"❄️ Mejorar Disipador (Enfriar) | ${cost_cool:.0f}",
-                                 font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.fg_light, state=cool_state,
-                                 relief="flat", command=lambda: self.upgrade_srv_cooling_action(region, idx))
-            btn_cool.pack(fill="x", pady=2)
-            
-            reboot_state = "normal" if (is_active and not self.engine.is_paused and srv['offline_timer'] == 0) else "disabled"
-            btn_reboot = tk.Button(self.inspection_content, text="🔄 Reiniciar Máquina (Flush caché)",
-                                   font=self.ui_font(9, "bold"), bg=self.bg_card, fg=self.color_yellow, state=reboot_state,
-                                   relief="flat", command=lambda: self.reboot_srv_action(region, idx))
-            btn_reboot.pack(fill="x", pady=2)
-
         # Botón de salir del panel
-        btn_close = tk.Button(self.inspection_content, text="✖ Cerrar Panel / Cancelar", font=self.ui_font(10, "bold"),
+        btn_close = tk.Button(self.inspection_content, text="✖ Cerrar Panel / Cancelar", font=("Helvetica", 12, "bold"),
                       bg=self.bg_card, fg=self.color_red, relief="flat", command=self.clear_selection)
         btn_close.pack(fill="x", pady=(12, 2))
 
@@ -621,35 +496,15 @@ class GameGUI:
     def buy_continent_action(self, continent):
         if self.engine.buy_continent(continent):
             self.log(self.engine.last_event_msg, False)
-            self.play_sound("success")
             self.select_item("continent", continent=continent)
         else:
             self.log(self.engine.last_event_msg, True)
-            self.play_sound("error")
         self.update_ui()
 
     def open_dc_action(self, region):
         if self.engine.open_datacenter(region):
             self.log(self.engine.last_event_msg, False)
-            self.play_sound("success")
             self.select_item("dc_open", region=region)
-        else:
-            self.log(self.engine.last_event_msg, True)
-            self.play_sound("error")
-        self.update_ui()
-
-    def upgrade_dc_slots_action(self, region):
-        if self.engine.upgrade_room_slots(region):
-            self.log(self.engine.last_event_msg, False)
-            self.play_sound("success")
-        else:
-            self.log(self.engine.last_event_msg, True)
-        self.update_ui()
-
-    def upgrade_dc_cooling_action(self, region):
-        if self.engine.upgrade_room_cooling(region):
-            self.log(self.engine.last_event_msg, False)
-            self.play_sound("success")
         else:
             self.log(self.engine.last_event_msg, True)
         self.update_ui()
@@ -657,44 +512,19 @@ class GameGUI:
     def buy_server_action(self, region):
         if self.engine.buy_server(region):
             self.log(self.engine.last_event_msg, False)
-            self.play_sound("success")
-            idx = len(self.engine.datacenters[region]["servers"]) - 1
-            self.select_item("server", region=region, index=idx)
+            self.select_item("dc_open", region=region)
         else:
             self.log(self.engine.last_event_msg, True)
-        self.update_ui()
-
-    def upgrade_srv_hw_action(self, region, idx):
-        if self.engine.upgrade_server_hardware(region, idx):
-            self.log(self.engine.last_event_msg, False)
-            self.play_sound("success")
-        else:
-            self.log(self.engine.last_event_msg, True)
-        self.update_ui()
-
-    def upgrade_srv_cooling_action(self, region, idx):
-        if self.engine.upgrade_server_cooling(region, idx):
-            self.log(self.engine.last_event_msg, False)
-            self.play_sound("success")
-        else:
-            self.log(self.engine.last_event_msg, True)
-        self.update_ui()
-
-    def reboot_srv_action(self, region, idx):
-        self.engine.reboot_server(region, idx)
-        self.log(self.engine.last_event_msg, False)
-        self.play_sound("success")
         self.update_ui()
 
     # --- Compras de Tienda ---
     def buy_upgrade_click(self, key):
-        if key in ["autoscale", "ia"] and getattr(self.engine, f"{key}_purchased"):
-            getattr(self.engine, f"toggle_{key}")()
-            self.play_sound("success")
+        engine_key = "auto_scale" if key == "autoscale" else ("ia_analyzer" if key == "ia" else key)
+        if key in ["autoscale", "ia"] and getattr(self.engine, f"{engine_key}_purchased"):
+            getattr(self.engine, f"toggle_{key if key == 'autoscale' else 'ia_analyzer'}")()
         else:
             if self.engine.buy_upgrade(key):
                 self.log(self.engine.last_event_msg, False)
-                self.play_sound("success")
             else:
                 self.log(f"🚨 Fondos insuficientes o jornada activa para comprar mejora: {key}.", True)
         self.update_ui()
@@ -724,7 +554,7 @@ class GameGUI:
         wan_oval_id = self.canvas.create_oval(internet_x - internet_radius, internet_y - internet_radius,
                                 internet_x + internet_radius, internet_y + internet_radius,
                                 fill="#89b4fa", outline="#ffffff", width=2, tags=tag_id_wan)
-        self.canvas.create_text(internet_x, internet_y, text="WAN", font=self.ui_font(8, "bold"), fill="#11111b", tags=(tag_id_wan, "text", "size_8"))
+        self.canvas.create_text(internet_x, internet_y, text="WAN", font=("Helvetica", 12, "bold"), fill="#11111b", tags=(tag_id_wan, "text", "size_8"))
         
         # Enlazar clic y hover para la WAN
         self.canvas.tag_bind(tag_id_wan, "<Button-1>", self.on_wan_click)
@@ -772,7 +602,7 @@ class GameGUI:
             # Círculo de Continente
             cont_oval_id = self.canvas.create_oval(cont_x - cont_radius, cont_y - cont_radius, cont_x + cont_radius, cont_y + cont_radius,
                                     fill="#1e1e2e", outline=line_color, width=2, tags=tag_id_cont)
-            self.canvas.create_text(cont_x, cont_y, text=cont.upper(), font=self.ui_font(7, "bold"), fill=self.fg_light, tags=(tag_id_cont, "text", "size_7"))
+            self.canvas.create_text(cont_x, cont_y, text=cont.upper(), font=("Helvetica", 11, "bold"), fill=self.fg_light, tags=(tag_id_cont, "text", "size_7"))
             
             # Enlazar clic y hover para el Continente
             self.canvas.tag_bind(tag_id_cont, "<Button-1>", lambda event, c=cont: self.on_continent_click(event, c))
@@ -797,65 +627,18 @@ class GameGUI:
                 dc_color = "#1e1e2e"
                 border_color = "#a6e3a1"
                 text_color = self.fg_light
-                dc_text = f"{city}\n{dc['room_temp']:.0f}°C\n{len(dc['servers'])}/{dc['room_max_slots']}"
+                ping = int(self.engine.regional_pings.get(city, 20.0))
+                dc_text = f"{city}\nServidores: {dc.get('servers_count', 0)}\n{ping} ms"
                 
                 # Círculo de la Ciudad
                 dc_oval_id = self.canvas.create_oval(cx - city_radius, cy - city_radius, cx + city_radius, cy + city_radius,
                                                      fill=dc_color, outline=border_color, width=2, tags=tag_id_dc)
-                self.canvas.create_text(cx, cy, text=dc_text, font=self.ui_font(6, "bold"), fill=text_color, justify="center", tags=(tag_id_dc, "text", "size_6"))
+                self.canvas.create_text(cx, cy, text=dc_text, font=("Helvetica", 10, "bold"), fill=text_color, justify="center", tags=(tag_id_dc, "text", "size_6"))
                 
                 # Enlazar clic y hover para el Data Center
                 self.canvas.tag_bind(tag_id_dc, "<Button-1>", lambda event, c=city: self.on_dc_click(event, c))
                 self.canvas.tag_bind(tag_id_dc, "<Enter>", lambda event, oid=dc_oval_id: self.canvas.itemconfigure(oid, outline="#ffffff", width=4))
                 self.canvas.tag_bind(tag_id_dc, "<Leave>", lambda event, oid=dc_oval_id, oc=border_color: self.canvas.itemconfigure(oid, outline=oc, width=2))
-                
-                # 3. Dibujar Servidores de esta ciudad (Nivel 4)
-                servers = dc["servers"]
-                num_servers = len(servers)
-                server_y = 70.0
-                server_radius = 12
-                
-                if num_servers > 0:
-                    dx = 30.0  # Separación
-                    start_x = cx - (num_servers - 1) * dx / 2
-                    
-                    for j, s in enumerate(servers):
-                        sx = start_x + j * dx
-                        
-                        # Cable ciudad -> servidor
-                        self.canvas.create_line(cx, cy + city_radius, sx, server_y - server_radius, fill="#45475a", width=1.5)
-                        
-                        # Color por estado/temp
-                        if s["offline_timer"] > 0:
-                            srv_color = self.color_blue
-                            label = f"OFF ({s['offline_timer']}s)"
-                        elif s["temp"] >= 85.0:
-                            srv_color = self.color_red
-                            label = f"{s['temp']:.1f}°C"
-                        elif s["temp"] >= 70.0:
-                            srv_color = self.color_yellow
-                            label = f"{s['temp']:.1f}°C"
-                        else:
-                            srv_color = self.color_green
-                            label = f"{s['temp']:.1f}°C"
-                            
-                        tag_id_srv = f"srv_click_{city}_{j}"
-                        
-                        srv_oval_id = self.canvas.create_oval(sx - server_radius, server_y - server_radius,
-                                                              sx + server_radius, server_y + server_radius,
-                                                              fill=srv_color, outline="#ffffff", width=1.5, tags=tag_id_srv)
-                        self.canvas.create_text(sx, server_y, text=f"S{j+1}", font=self.ui_font(6, "bold"), fill="#11111b", tags=(tag_id_srv, "text", "size_6"))
-                        
-                        ping_text = "OFF" if s["offline_timer"] > 0 else f"{s['ping']:.0f}ms"
-                        self.canvas.create_text(sx, server_y + server_radius + 8, text=ping_text, font=self.ui_font(6, "bold"), fill=self.fg_light, tags=("text", "size_6"))
-                        self.canvas.create_text(sx, server_y + server_radius + 16, text=label, font=self.ui_font(5, "bold"), fill=self.fg_dim, tags=("text", "size_5"))
-                        
-                        # Enlazar clic y hover para el Servidor
-                        self.canvas.tag_bind(tag_id_srv, "<Button-1>", lambda event, c=city, idx=j: self.on_srv_click(event, c, idx))
-                        self.canvas.tag_bind(tag_id_srv, "<Enter>", lambda event, oid=srv_oval_id: self.canvas.itemconfigure(oid, outline="#f9e2af", width=4))
-                        self.canvas.tag_bind(tag_id_srv, "<Leave>", lambda event, oid=srv_oval_id: self.canvas.itemconfigure(oid, outline="#ffffff", width=1.5))
-                else:
-                    self.canvas.create_text(cx, cy + city_radius + 15, text="Sin Servidores", font=self.ui_font(6, "italic"), fill=self.fg_dim, tags=("text", "size_6", "style_italic"))
 
         # 4. Dibujar DDoS (Hacia la ciudad atacada)
         if self.engine.traffic_ddos > 0:
@@ -899,7 +682,6 @@ class GameGUI:
             self.btn_start_shift.config(text="▶️ INICIAR JORNADA", state="normal", bg=self.color_green, fg="#11111b")
             
         self.lbl_forecast.config(text=self.engine.get_forecast_text())
-        self.lbl_rank.config(text=f"🏆 RANGO: {self.engine.it_title}")
         
         # 2. Métricas Dashboard
         self.cards["credits"].config(text=f"${self.engine.credits:,.2f}")
@@ -907,7 +689,7 @@ class GameGUI:
         self.cards["latency"].config(text=f"{self.engine.latency:.1f} ms")
         self.cards["ceo"].config(text=f"{self.engine.ceo_approval:.0f}%")
         
-        total_srv = sum(len(dc["servers"]) for dc in self.engine.datacenters.values())
+        total_srv = sum(dc.get("servers_count", 0) for dc in self.engine.datacenters.values())
         self.cards["room"].config(text=f"{len(self.engine.datacenters)}/9 DCs | {total_srv} Servs")
         
         # Latencia color
@@ -1030,15 +812,6 @@ class GameGUI:
             self.log(f"Presupuesto Neto Final: ${self.engine.credits:.2f}", False)
             self.log(f"Aprobación CEO: {self.engine.ceo_approval:.0f}%", False)
             self.log("=========================================", False)
-            
-            if self.engine.new_certification_unlocked:
-                self.play_sound("success")
-                messagebox.showinfo(
-                    "🎓 ¡NUEVA CERTIFICACIÓN DE TI!",
-                    f"¡Felicitaciones! Has obtenido una nueva certificación de TI:\n\n🏆 Rango: {self.engine.it_title}\n\n¡Sigue gestionando la red con éxito para seguir ascendiendo!",
-                    parent=self.window
-                )
-                self.engine.new_certification_unlocked = False
             
             if self.engine.is_game_over:
                 self.log(self.engine.last_event_msg, True)

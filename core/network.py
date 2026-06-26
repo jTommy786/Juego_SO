@@ -44,9 +44,11 @@ class NetworkManager:
         return ""
 
     def start_workday(self):
-        unlocked_cities = [c for c in self.engine.all_cities if self.engine.is_city_unlocked(c)]
-        self.ddos_region = random.choice(unlocked_cities)
-        self.tournament_region = random.choice(unlocked_cities)
+        open_cities = list(self.engine.datacenters.keys())
+        if not open_cities:
+            open_cities = ["Miami"]
+        self.ddos_region = random.choice(open_cities)
+        self.tournament_region = random.choice(open_cities)
         
         if self.forecast_type == "HACKERS":
             day = self.engine.days_elapsed
@@ -70,9 +72,7 @@ class NetworkManager:
     def get_max_capacity(self):
         cap = 0.0
         for dc in self.engine.datacenters.values():
-            for s in dc["servers"]:
-                if s["offline_timer"] == 0:
-                    cap += BALANCING_CONFIG["CAPACITY_BASE"] + ((s["hw_lvl"] - 1) * BALANCING_CONFIG["CAPACITY_PER_SERVER_LVL"])
+            cap += dc["servers_count"] * BALANCING_CONFIG["CAPACITY_BASE"]
         return max(10.0, cap)
 
     def process_traffic(self):
@@ -110,10 +110,7 @@ class NetworkManager:
         # Ruteo y Capacidad por Sala de Servidores
         dc_capacities = {}
         for city, dc in self.engine.datacenters.items():
-            cap = sum(
-                BALANCING_CONFIG["CAPACITY_BASE"] + ((s["hw_lvl"] - 1) * BALANCING_CONFIG["CAPACITY_PER_SERVER_LVL"])
-                for s in dc["servers"] if s["offline_timer"] == 0
-            )
+            cap = dc["servers_count"] * BALANCING_CONFIG["CAPACITY_BASE"]
             dc_capacities[city] = cap
 
         # Ruteo local inicial
@@ -213,13 +210,11 @@ class NetworkManager:
             else:
                 dc_ping = 20.0
                 
-            for s in dc["servers"]:
-                s["ping"] = dc_ping + random.uniform(-1.0, 1.0) if s["offline_timer"] == 0 else 0.0
-                
-                if s["offline_timer"] == 0:
-                    all_offline = False
-                    pings_sum += s["ping"]
-                    active_count += 1
+            servers_count = dc.get("servers_count", 0)
+            if servers_count > 0:
+                all_offline = False
+                pings_sum += dc_ping * servers_count
+                active_count += servers_count
 
         for city in self.engine.all_cities:
             city_t = self.traffic_users_regional.get(city, 0)
@@ -260,5 +255,3 @@ class NetworkManager:
         else:
             self.latency = 300.0
         self.latency = min(300.0, self.latency)
-        
-        self.all_offline = all_offline

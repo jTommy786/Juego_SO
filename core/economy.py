@@ -38,8 +38,7 @@ class EconomyManager:
         maint = BALANCING_CONFIG["DAILY_MAINTENANCE_BASE_SERVER"]
         
         for reg, dc in self.engine.datacenters.items():
-            maint += len(dc["servers"]) * BALANCING_CONFIG["DAILY_MAINTENANCE_PER_PHYSICAL_SERVER"]
-            maint += (dc["room_cooling_lvl"] - 1) * BALANCING_CONFIG["DAILY_MAINTENANCE_ROOM_COOLING"]
+            maint += dc["servers_count"] * BALANCING_CONFIG["DAILY_MAINTENANCE_PER_PHYSICAL_SERVER"]
             maint += 150.0  # Costo fijo por cada datacenter abierto
             
         if self.auto_scale_purchased:
@@ -108,12 +107,9 @@ class EconomyManager:
         if self.credits >= cost:
             self.credits -= cost
             self.engine.datacenters[region] = {
-                "room_max_slots": BALANCING_CONFIG["ROOM_SLOTS_BASE"],
-                "room_cooling_lvl": 1,
-                "room_temp": 20.0,
+                "servers_count": 0,
                 "cpu_stress": 0.0,
-                "ram_stress": 0.0,
-                "servers": []
+                "ram_stress": 0.0
             }
             self.engine.last_event_msg = f"¡Data Center en {region} abierto con éxito!"
             return True
@@ -127,62 +123,15 @@ class EconomyManager:
         if region not in self.engine.datacenters:
             self.engine.last_event_msg = f"🚨 ERROR: Abre el Data Center de {region} primero."
             return False
-        dc = self.engine.datacenters[region]
-        if len(dc["servers"]) >= dc["room_max_slots"]:
-            self.engine.last_event_msg = f"🚨 SIN ESPACIO en {region}: Expande los racks primero."
-            return False
         cost = BALANCING_CONFIG["UPGRADE_SERVER_COST"]
         if self.credits >= cost:
             self.credits -= cost
-            total_srv_count = sum(len(d["servers"]) for d in self.engine.datacenters.values())
-            dc["servers"].append({
-                "name": f"Servidor {total_srv_count + 1}",
-                "region": region,
-                "hw_lvl": 1,
-                "cool_lvl": 1,
-                "temp": 35.0,
-                "offline_timer": 0,
-                "ping": 0.0
-            })
+            self.engine.datacenters[region]["servers_count"] += 1
             self.engine.last_event_msg = f"Servidor instalado con éxito en el Data Center de {region}."
             return True
         else:
             self.engine.last_event_msg = f"🚨 Presupuesto insuficiente para comprar servidor ($600)."
             return False
-
-    def upgrade_room_slots(self, region):
-        if not self.engine.workday_active and region in self.engine.datacenters and self.credits >= BALANCING_CONFIG["UPGRADE_ROOM_SLOTS_COST"]:
-            self.credits -= BALANCING_CONFIG["UPGRADE_ROOM_SLOTS_COST"]
-            self.engine.datacenters[region]["room_max_slots"] += 2
-            self.engine.last_event_msg = f"DC {region}: Racks ampliados a {self.engine.datacenters[region]['room_max_slots']} slots."
-            return True
-        return False
-
-    def upgrade_room_cooling(self, region):
-        if not self.engine.workday_active and region in self.engine.datacenters and self.credits >= BALANCING_CONFIG["UPGRADE_ROOM_COOLING_COST"]:
-            self.credits -= BALANCING_CONFIG["UPGRADE_ROOM_COOLING_COST"]
-            self.engine.datacenters[region]["room_cooling_lvl"] += 1
-            self.engine.last_event_msg = f"DC {region}: Climatización mejorada a Nivel {self.engine.datacenters[region]['room_cooling_lvl']}."
-            return True
-        return False
-
-    def upgrade_server_hardware(self, region, idx):
-        if not self.engine.workday_active and region in self.engine.datacenters and self.credits >= BALANCING_CONFIG["UPGRADE_SERVER_HW_COST"]:
-            dc = self.engine.datacenters[region]
-            self.credits -= BALANCING_CONFIG["UPGRADE_SERVER_HW_COST"]
-            dc["servers"][idx]["hw_lvl"] += 1
-            self.engine.last_event_msg = f"{dc['servers'][idx]['name']} ({region}): Hardware mejorado a Nivel {dc['servers'][idx]['hw_lvl']}."
-            return True
-        return False
-
-    def upgrade_server_cooling(self, region, idx):
-        if not self.engine.workday_active and region in self.engine.datacenters and self.credits >= BALANCING_CONFIG["UPGRADE_SERVER_COOLING_COST"]:
-            dc = self.engine.datacenters[region]
-            self.credits -= BALANCING_CONFIG["UPGRADE_SERVER_COOLING_COST"]
-            dc["servers"][idx]["cool_lvl"] += 1
-            self.engine.last_event_msg = f"{dc['servers'][idx]['name']} ({region}): Disipación mejorada a Nivel {dc['servers'][idx]['cool_lvl']}."
-            return True
-        return False
 
     def buy_upgrade(self, key):
         if self.engine.workday_active and key not in ["autoscale", "ia"]:
@@ -212,8 +161,8 @@ class EconomyManager:
 
     def process_tick(self):
         all_offline = self.engine.network.all_offline
-        cpu_stress = self.engine.thermo.cpu_stress
-        ram_stress = self.engine.thermo.ram_stress
+        cpu_stress = self.engine.cpu_stress
+        ram_stress = self.engine.ram_stress
         latency = self.engine.network.latency
         
         # Tránsito total
@@ -224,12 +173,12 @@ class EconomyManager:
         )
         
         if cpu_stress >= 100.0 or ram_stress >= 100.0 or all_offline:
-            self.engine.thermo.is_downtime = True
+            self.engine.is_downtime = True
             self.credits -= BALANCING_CONFIG["DOWNTIME_PENALTY"]
             self.daily_penalty += BALANCING_CONFIG["DOWNTIME_PENALTY"]
             self.ceo_approval = max(0.0, self.ceo_approval - 5.0)
         else:
-            self.engine.thermo.is_downtime = False
+            self.engine.is_downtime = False
             if latency < 100.0:
                 self.daily_satisfied_users += total_traffic_handled
             
