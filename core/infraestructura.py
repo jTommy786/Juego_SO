@@ -5,12 +5,12 @@ class GestorInfraestructura:
         self.motor = motor
         self.estres_cpu = 0.0
         self.estres_ram = 0.0
-        self.is_downtime = False
+        self.esta_caido = False
         
         # Inicializar Data Centers (Miami con 1 servidor al inicio)
         self.centros_datos = {
             "Miami": {
-                "servers_count": 1,
+                "cantidad_servidores": 1,
                 "estres_cpu": 0.0,
                 "estres_ram": 0.0
             }
@@ -20,7 +20,7 @@ class GestorInfraestructura:
         # Calcular Carga y Estrés por Sala de Servidores
         capacidades_dc = {}
         for ciudad, dc in self.centros_datos.items():
-            capacidad = dc["servers_count"] * CONFIG_BALANCEO["CAPACITY_BASE"]
+            capacidad = dc["cantidad_servidores"] * CONFIG_BALANCEO["CAPACIDAD_BASE"]
             capacidades_dc[ciudad] = capacidad
 
         for ciudad, dc in self.centros_datos.items():
@@ -35,7 +35,7 @@ class GestorInfraestructura:
             )
             
             cpu_dc = (trafico_dc / capacidad_dc_efectiva) * 100.0
-            if self.motor.party_routing_active:
+            if self.motor.ruteo_partidas_activo:
                 cpu_dc *= 0.75
             dc["estres_cpu"] = min(100.0, cpu_dc)
             
@@ -54,7 +54,7 @@ class GestorInfraestructura:
         capacidad_global_efectiva = max(10.0, capacidad_global_total)
         
         cpu_global = (trafico_total_atendido / capacidad_global_efectiva) * 100.0
-        if self.motor.party_routing_active:
+        if self.motor.ruteo_partidas_activo:
             cpu_global *= 0.75
         self.estres_cpu = min(100.0, cpu_global)
         
@@ -65,6 +65,6 @@ class GestorInfraestructura:
 
         # Determinar downtime
         if self.estres_cpu >= 100.0 or self.estres_ram >= 100.0:
-            self.is_downtime = True
+            self.esta_caido = True
         else:
-            self.is_downtime = False
+            self.esta_caido = False

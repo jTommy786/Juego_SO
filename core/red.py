@@ -15,32 +15,32 @@ class GestorRed:
         self.trafico_ddos = 0
         self.temporizador_ddos = 0
         self.contador_ticks = 0
-        self.latencia = CONFIG_BALANCEO["BASE_LATENCY_MS"]
+        self.latencia = CONFIG_BALANCEO["LATENCIA_BASE_MS"]
         
         # Pronóstico
         self.tipo_pronostico = "NORMAL"
-        self.generate_forecast()
+        self.generar_pronostico()
         
         # Auxiliares de Ruteo
         self.atendido_local = {}
         self.atendido_mismo_continente = {ciudad: {} for ciudad in self.motor.todas_las_ciudades}
         self.atendido_otro_continente = {ciudad: {} for ciudad in self.motor.todas_las_ciudades}
-        self.dropped = {}
+        self.peticiones_perdidas = {}
         self.penalizacion_mismo_continente = 30.0
         self.penalizacion_otro_continente = 150.0
         self.todo_offline = True
 
-    def generate_forecast(self):
+    def generar_pronostico(self):
         tipos = ["NORMAL", "TORNEO", "HACKERS"]
         self.tipo_pronostico = random.choices(tipos, weights=[0.50, 0.25, 0.25])[0]
 
     def obtener_texto_pronostico(self):
         if self.tipo_pronostico == "NORMAL":
-            return "📈 PRONOSTICO: Tráfico normal y estable."
+            return "📈 PRONÓSTICO: Tráfico normal y estable."
         elif self.tipo_pronostico == "TORNEO":
-            return "🔥 PRONOSTICO: Torneo Competitivo (Tráfico x3)."
+            return "🔥 PRONÓSTICO: Torneo Competitivo (Tráfico x3)."
         elif self.tipo_pronostico == "HACKERS":
-            return "🚨 PRONOSTICO: Alerta de Hackers (DDoS Inminente)."
+            return "🚨 PRONÓSTICO: Alerta de Hackers (DDoS Inminente)."
         return ""
 
     def iniciar_jornada(self):
@@ -62,33 +62,33 @@ class GestorRed:
         else:
             self.temporizador_ddos = 0
             if self.tipo_pronostico == "TORNEO":
-                self.motor.ultimo_mensaje_evento = f"🔥 ¡TORNEO EN REGION {self.region_torneo.upper()}! Tráfico x3."
+                self.motor.ultimo_mensaje_evento = f"🔥 ¡TORNEO EN REGIÓN {self.region_torneo.upper()}! Tráfico x3."
             else:
                 self.motor.ultimo_mensaje_evento = "Jornada laboral iniciada. Analizando tráfico regional por ciudad."
 
     def finalizar_jornada(self):
-        self.generate_forecast()
+        self.generar_pronostico()
 
     def obtener_capacidad_maxima(self):
         capacidad = 0.0
         for dc in self.motor.centros_datos.values():
-            capacidad += dc["servers_count"] * CONFIG_BALANCEO["CAPACITY_BASE"]
+            capacidad += dc["cantidad_servidores"] * CONFIG_BALANCEO["CAPACIDAD_BASE"]
         return max(10.0, capacidad)
 
     def procesar_trafico(self):
         # Generar Tráfico por Ciudad
-        trafico_base = CONFIG_BALANCEO["TRAFFIC_BASE"] * (CONFIG_BALANCEO["TRAFFIC_GROWTH"] ** self.contador_ticks)
+        trafico_base = CONFIG_BALANCEO["TRAFICO_BASE"] * (CONFIG_BALANCEO["CRECIMIENTO_TRAFICO"] ** self.contador_ticks)
         
         self.usuarios_trafico_regional = {}
-        for continente, cities in CONFIG_BALANCEO["LOCATIONS"].items():
-            if not self.motor.is_continent_unlocked(continente):
-                for ciudad in cities:
+        for continente, ciudades in CONFIG_BALANCEO["UBICACIONES"].items():
+            if not self.motor.esta_continente_desbloqueado(continente):
+                for ciudad in ciudades:
                     self.usuarios_trafico_regional[ciudad] = 0
                 continue
             
             multiplicador = 1.0 if continente == "América" else (0.7 if continente == "Europa" else 0.5)
-            for ciudad in cities:
-                parte_ciudad = trafico_base * multiplicador * (1.0 / len(cities))
+            for ciudad in ciudades:
+                parte_ciudad = trafico_base * multiplicador * (1.0 / len(ciudades))
                 self.usuarios_trafico_regional[ciudad] = int(parte_ciudad * (1.0 + random.uniform(-0.15, 0.15)))
         
         # Multiplicador por Torneo Regional
@@ -99,18 +99,18 @@ class GestorRed:
         ddos_in = 0
         if self.temporizador_ddos > 0:
             self.temporizador_ddos -= 1
-            ddos_in = int(random.uniform(1500, 3000) * (0.10 if (self.motor.ia_analyzer_purchased and self.motor.ia_analyzer_enabled) else 1.0))
+            ddos_in = int(random.uniform(1500, 3000) * (0.10 if (self.motor.analizador_ia_comprado and self.motor.analizador_ia_habilitado) else 1.0))
             if self.region_ddos in self.usuarios_trafico_regional:
                 self.usuarios_trafico_regional[self.region_ddos] += ddos_in
-            self.motor.ultimo_mensaje_evento = f"DDoS mitigado por IA en {self.region_ddos}." if self.motor.ia_analyzer_enabled else f"🚨 ¡ATAQUE DDoS MASIVO EN {self.region_ddos.upper()}!"
+            self.motor.ultimo_mensaje_evento = f"DDoS mitigado por IA en {self.region_ddos}." if self.motor.analizador_ia_habilitado else f"🚨 ¡ATAQUE DDoS MASIVO EN {self.region_ddos.upper()}!"
 
-        self.usuarios_trafico = sum(self.usuarios_trafico_regional.values()) - (ddos_in if self.motor.ia_analyzer_enabled else 0)
+        self.usuarios_trafico = sum(self.usuarios_trafico_regional.values()) - (ddos_in if self.motor.analizador_ia_habilitado else 0)
         self.trafico_ddos = ddos_in
 
         # Ruteo y Capacidad por Sala de Servidores
         capacidades_dc = {}
         for ciudad, dc in self.motor.centros_datos.items():
-            capacidad = dc["servers_count"] * CONFIG_BALANCEO["CAPACITY_BASE"]
+            capacidad = dc["cantidad_servidores"] * CONFIG_BALANCEO["CAPACIDAD_BASE"]
             capacidades_dc[ciudad] = capacidad
 
         # Ruteo local inicial
@@ -130,22 +130,22 @@ class GestorRed:
         # Ruteo de desbordamiento (Overflow en dos niveles)
         atendido_mismo_continente = {ciudad: {} for ciudad in self.motor.todas_las_ciudades}
         atendido_otro_continente = {ciudad: {} for ciudad in self.motor.todas_las_ciudades}
-        dropped = {ciudad: 0.0 for ciudad in self.motor.todas_las_ciudades}
+        peticiones_perdidas = {ciudad: 0.0 for ciudad in self.motor.todas_las_ciudades}
 
-        self.penalizacion_mismo_continente = 0.0 if self.motor.geo_balancer_active else 30.0
-        self.penalizacion_otro_continente = 0.0 if self.motor.geo_balancer_active else 150.0
+        self.penalizacion_mismo_continente = 0.0 if self.motor.balanceador_geo_activo else 30.0
+        self.penalizacion_otro_continente = 0.0 if self.motor.balanceador_geo_activo else 150.0
 
         for ciudad_origen in self.motor.todas_las_ciudades:
             peticiones = self.usuarios_trafico_regional.get(ciudad_origen, 0) - atendido_local.get(ciudad_origen, 0)
             if peticiones <= 0:
                 continue
             
-            continente_origen = self.motor.get_city_continent(ciudad_origen)
+            continente_origen = self.motor.obtener_continente_ciudad(ciudad_origen)
             
             # Nivel 1: Mismo continente
             dcs_mismo_continente_abiertos = [
                 c for c in self.motor.centros_datos 
-                if c in CONFIG_BALANCEO["LOCATIONS"][continente_origen] and c != ciudad_origen
+                if c in CONFIG_BALANCEO["UBICACIONES"][continente_origen] and c != ciudad_origen
             ]
             for destino in dcs_mismo_continente_abiertos:
                 if peticiones <= 0:
@@ -160,7 +160,7 @@ class GestorRed:
             if peticiones > 0:
                 dcs_otro_continente_abiertos = [
                     c for c in self.motor.centros_datos 
-                    if c not in CONFIG_BALANCEO["LOCATIONS"][continente_origen]
+                    if c not in CONFIG_BALANCEO["UBICACIONES"][continente_origen]
                 ]
                 for destino in dcs_otro_continente_abiertos:
                     if peticiones <= 0:
@@ -171,12 +171,12 @@ class GestorRed:
                         capacidad_disponible_dc[destino] -= routed
                         peticiones -= routed
             
-            dropped[ciudad_origen] = peticiones
+            peticiones_perdidas[ciudad_origen] = peticiones
 
         self.atendido_local = atendido_local
         self.atendido_mismo_continente = atendido_mismo_continente
         self.atendido_otro_continente = atendido_otro_continente
-        self.dropped = dropped
+        self.peticiones_perdidas = peticiones_perdidas
 
     def calcular_pings(self):
         suma_pings = 0.0
@@ -210,11 +210,11 @@ class GestorRed:
             else:
                 dc_ping = 20.0
                 
-            servers_count = dc.get("servers_count", 0)
-            if servers_count > 0:
+            cantidad_servidores = dc.get("cantidad_servidores", 0)
+            if cantidad_servidores > 0:
                 todo_offline = False
-                suma_pings += dc_ping * servers_count
-                contador_activo += servers_count
+                suma_pings += dc_ping * cantidad_servidores
+                contador_activo += cantidad_servidores
 
         for ciudad in self.motor.todas_las_ciudades:
             city_t = self.usuarios_trafico_regional.get(ciudad, 0)
@@ -239,7 +239,7 @@ class GestorRed:
                         cong = (cpu_dc - 80.0) * 4.0 if cpu_dc > 80.0 else 0.0
                         weighted_ping_sum += trafico_otro * (20.0 + self.penalizacion_otro_continente + cong)
                 
-                trafico_caido = self.dropped.get(ciudad, 0)
+                trafico_caido = self.peticiones_perdidas.get(ciudad, 0)
                 if trafico_caido > 0:
                     weighted_ping_sum += trafico_caido * 300.0
                     

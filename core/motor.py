@@ -15,43 +15,43 @@ class MotorJuego:
         self.ultimo_mensaje_evento = "Consola de SysAdmin lista. Fase de Planificación activa."
         
         # Banderas de progresión regional (Europa Día 5, Asia Día 10)
-        self.europe_unlocked = False
-        self.asia_unlocked = False
+        self.europa_desbloqueada = False
+        self.asia_desbloqueada = False
         
         # Continentes comprados/activos (América por defecto)
         self.continentes_comprados = ["América"]
 
         # Extraer lista de todas las ciudades (Sub-regiones)
         self.todas_las_ciudades = []
-        for cities in CONFIG_BALANCEO["LOCATIONS"].values():
-            self.todas_las_ciudades.extend(cities)
+        for ciudades in CONFIG_BALANCEO["UBICACIONES"].values():
+            self.todas_las_ciudades.extend(ciudades)
 
         # Instanciar los tres Managers de dominio (Facade)
         self.red = GestorRed(self)
         self.infraestructura = GestorInfraestructura(self)
         self.economia = GestorEconomia(self)
 
-    def is_continent_unlocked(self, continente):
+    def esta_continente_desbloqueado(self, continente):
         if continente == "América":
             return True
         elif continente == "Europa":
-            return self.europe_unlocked
+            return self.europa_desbloqueada
         elif continente == "Asia":
-            return self.asia_unlocked
+            return self.asia_desbloqueada
         return False
 
-    def is_city_unlocked(self, ciudad):
-        cont = self.get_city_continent(ciudad)
+    def esta_ciudad_desbloqueada(self, ciudad):
+        cont = self.obtener_continente_ciudad(ciudad)
         return cont in self.continentes_comprados
 
-    def get_city_continent(self, ciudad):
-        for cont, cities in CONFIG_BALANCEO["LOCATIONS"].items():
-            if ciudad in cities:
+    def obtener_continente_ciudad(self, ciudad):
+        for cont, ciudades in CONFIG_BALANCEO["UBICACIONES"].items():
+            if ciudad in ciudades:
                 return cont
         return None
 
-    def generate_forecast(self):
-        self.red.generate_forecast()
+    def generar_pronostico(self):
+        self.red.generar_pronostico()
 
     def obtener_texto_pronostico(self):
         return self.red.obtener_texto_pronostico()
@@ -69,11 +69,11 @@ class MotorJuego:
         
         # Progresión por días: Desbloquear nuevos continentes
         unlock_msg = ""
-        if self.dias_transcurridos >= 5 and not self.europe_unlocked:
-            self.europe_unlocked = True
+        if self.dias_transcurridos >= 5 and not self.europa_desbloqueada:
+            self.europa_desbloqueada = True
             unlock_msg = "🌐 NUEVO MERCADO: ¡Europa ahora está disponible para expandir la red!"
-        if self.dias_transcurridos >= 10 and not self.asia_unlocked:
-            self.asia_unlocked = True
+        if self.dias_transcurridos >= 10 and not self.asia_desbloqueada:
+            self.asia_desbloqueada = True
             unlock_msg = "🌐 NUEVO MERCADO: ¡Asia ahora está disponible para expandir la red!"
             
         if unlock_msg:
@@ -122,7 +122,7 @@ class MotorJuego:
         self.red.procesar_trafico()
         self.infraestructura.procesar_carga()
         self.red.calcular_pings()
-        self.economia.process_tick()
+        self.economia.procesar_tick()
 
         return {"cpu": self.estres_cpu, "ram": self.estres_ram, "latencia": self.latencia, "creditos": self.creditos, "workday_done": False}
 
@@ -136,116 +136,116 @@ class MotorJuego:
         self.economia.creditos = valor
 
     @property
-    def ceo_approval(self):
-        return self.economia.ceo_approval
+    def aprobacion_ceo(self):
+        return self.economia.aprobacion_ceo
     
-    @ceo_approval.setter
-    def ceo_approval(self, valor):
-        self.economia.ceo_approval = valor
+    @aprobacion_ceo.setter
+    def aprobacion_ceo(self, valor):
+        self.economia.aprobacion_ceo = valor
 
     @property
-    def geo_balancer_active(self):
-        return self.economia.geo_balancer_active
+    def balanceador_geo_activo(self):
+        return self.economia.balanceador_geo_activo
     
-    @geo_balancer_active.setter
-    def geo_balancer_active(self, valor):
-        self.economia.geo_balancer_active = valor
+    @balanceador_geo_activo.setter
+    def balanceador_geo_activo(self, valor):
+        self.economia.balanceador_geo_activo = valor
 
     @property
-    def auto_scale_purchased(self):
-        return self.economia.auto_scale_purchased
+    def autoescalado_comprado(self):
+        return self.economia.autoescalado_comprado
     
-    @auto_scale_purchased.setter
-    def auto_scale_purchased(self, valor):
-        self.economia.auto_scale_purchased = valor
+    @autoescalado_comprado.setter
+    def autoescalado_comprado(self, valor):
+        self.economia.autoescalado_comprado = valor
 
     @property
-    def ia_analyzer_purchased(self):
-        return self.economia.ia_analyzer_purchased
+    def analizador_ia_comprado(self):
+        return self.economia.analizador_ia_comprado
     
-    @ia_analyzer_purchased.setter
-    def ia_analyzer_purchased(self, valor):
-        self.economia.ia_analyzer_purchased = valor
+    @analizador_ia_comprado.setter
+    def analizador_ia_comprado(self, valor):
+        self.economia.analizador_ia_comprado = valor
 
     @property
-    def party_routing_active(self):
-        return self.economia.party_routing_active
+    def ruteo_partidas_activo(self):
+        return self.economia.ruteo_partidas_activo
     
-    @party_routing_active.setter
-    def party_routing_active(self, valor):
-        self.economia.party_routing_active = valor
+    @ruteo_partidas_activo.setter
+    def ruteo_partidas_activo(self, valor):
+        self.economia.ruteo_partidas_activo = valor
 
     @property
-    def auto_scale_enabled(self):
-        return self.economia.auto_scale_enabled
+    def autoescalado_habilitado(self):
+        return self.economia.autoescalado_habilitado
     
-    @auto_scale_enabled.setter
-    def auto_scale_enabled(self, valor):
-        self.economia.auto_scale_enabled = valor
+    @autoescalado_habilitado.setter
+    def autoescalado_habilitado(self, valor):
+        self.economia.autoescalado_habilitado = valor
 
     @property
-    def ia_analyzer_enabled(self):
-        return self.economia.ia_analyzer_enabled
+    def analizador_ia_habilitado(self):
+        return self.economia.analizador_ia_habilitado
     
-    @ia_analyzer_enabled.setter
-    def ia_analyzer_enabled(self, valor):
-        self.economia.ia_analyzer_enabled = valor
+    @analizador_ia_habilitado.setter
+    def analizador_ia_habilitado(self, valor):
+        self.economia.analizador_ia_habilitado = valor
 
     @property
-    def is_autoscale_running(self):
-        return self.economia.is_autoscale_running
+    def autoescalado_ejecutandose(self):
+        return self.economia.autoescalado_ejecutandose
     
-    @is_autoscale_running.setter
-    def is_autoscale_running(self, valor):
-        self.economia.is_autoscale_running = valor
+    @autoescalado_ejecutandose.setter
+    def autoescalado_ejecutandose(self, valor):
+        self.economia.autoescalado_ejecutandose = valor
 
     @property
-    def daily_revenue(self):
-        return self.economia.daily_revenue
+    def ingresos_diarios(self):
+        return self.economia.ingresos_diarios
     
-    @daily_revenue.setter
-    def daily_revenue(self, valor):
-        self.economia.daily_revenue = valor
+    @ingresos_diarios.setter
+    def ingresos_diarios(self, valor):
+        self.economia.ingresos_diarios = valor
 
     @property
-    def daily_penalty(self):
-        return self.economia.daily_penalty
+    def penalizacion_diaria(self):
+        return self.economia.penalizacion_diaria
     
-    @daily_penalty.setter
-    def daily_penalty(self, valor):
-        self.economia.daily_penalty = valor
+    @penalizacion_diaria.setter
+    def penalizacion_diaria(self, valor):
+        self.economia.penalizacion_diaria = valor
 
     @property
-    def daily_maintenance(self):
-        return self.economia.daily_maintenance
+    def mantenimiento_diario(self):
+        return self.economia.mantenimiento_diario
     
-    @daily_maintenance.setter
-    def daily_maintenance(self, valor):
-        self.economia.daily_maintenance = valor
+    @mantenimiento_diario.setter
+    def mantenimiento_diario(self, valor):
+        self.economia.mantenimiento_diario = valor
 
     @property
-    def daily_satisfied_users(self):
-        return self.economia.daily_satisfied_users
+    def usuarios_satisfechos_diarios(self):
+        return self.economia.usuarios_satisfechos_diarios
     
-    @daily_satisfied_users.setter
-    def daily_satisfied_users(self, valor):
-        self.economia.daily_satisfied_users = valor
+    @usuarios_satisfechos_diarios.setter
+    def usuarios_satisfechos_diarios(self, valor):
+        self.economia.usuarios_satisfechos_diarios = valor
 
     @property
-    def daily_base_budget(self):
-        return self.economia.daily_base_budget
+    def presupuesto_base_diario(self):
+        return self.economia.presupuesto_base_diario
     
-    @daily_base_budget.setter
-    def daily_base_budget(self, valor):
-        self.economia.daily_base_budget = valor
+    @presupuesto_base_diario.setter
+    def presupuesto_base_diario(self, valor):
+        self.economia.presupuesto_base_diario = valor
 
     @property
-    def daily_satisfied_bonus(self):
-        return self.economia.daily_satisfied_bonus
+    def bono_satisfechos_diario(self):
+        return self.economia.bono_satisfechos_diario
     
-    @daily_satisfied_bonus.setter
-    def daily_satisfied_bonus(self, valor):
-        self.economia.daily_satisfied_bonus = valor
+    @bono_satisfechos_diario.setter
+    def bono_satisfechos_diario(self, valor):
+        self.economia.bono_satisfechos_diario = valor
 
     # --- PROPIEDADES DE INFRAESTRUCTURA ---
     @property
@@ -273,12 +273,12 @@ class MotorJuego:
         self.infraestructura.estres_ram = valor
 
     @property
-    def is_downtime(self):
-        return self.infraestructura.is_downtime
+    def esta_caido(self):
+        return self.infraestructura.esta_caido
     
-    @is_downtime.setter
-    def is_downtime(self, valor):
-        self.infraestructura.is_downtime = valor
+    @esta_caido.setter
+    def esta_caido(self, valor):
+        self.infraestructura.esta_caido = valor
 
     # --- PROPIEDADES DE RED ---
     @property
@@ -360,5 +360,3 @@ class MotorJuego:
     @region_torneo.setter
     def region_torneo(self, valor):
         self.red.region_torneo = valor
-
-

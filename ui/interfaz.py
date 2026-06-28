@@ -154,7 +154,7 @@ class InterfazJuego:
         self.lbl_forecast = tk.Label(header, text="📈 PRONOSTICO: Carga normal", font=("Helvetica", 11, "bold"), fg=self.color_blue, bg=self.bg_panel)
         self.lbl_forecast.pack(side="left", padx=12, pady=11)
         
-        self.lbl_autoscale_banner = tk.Label(header, text="AUTO-SCALING: INACTIVO", font=("Helvetica", 10, "bold"), fg=self.fg_dim, bg=self.bg_panel)
+        self.lbl_autoscale_banner = tk.Label(header, text="AUTO-ESCALADO: INACTIVO", font=("Helvetica", 10, "bold"), fg=self.fg_dim, bg=self.bg_panel)
         self.lbl_autoscale_banner.pack(side="right", padx=20, pady=11)
 
         # 2. Contenedor Principal (2 Columnas)
@@ -179,10 +179,10 @@ class InterfazJuego:
         self.cards = {}
         metrics = [
             ("creditos", "PRESUPUESTO", self.color_green, "$3,000.00"),
-            ("trafico", "TRAFICO TOTAL", self.color_blue, "0 req/s"),
+            ("trafico", "TRÁFICO TOTAL", self.color_blue, "0 req/s"),
             ("latencia", "PING PROMEDIO", self.color_green, "0 ms"),
-            ("ceo", "APROBACION CEO", self.color_green, "100%"),
-            ("room", "DATA CENTERS", self.color_yellow, "1/9 Salas")
+            ("ceo", "APROBACIÓN CEO", self.color_green, "100%"),
+            ("room", "CENTROS DE DATOS", self.color_yellow, "1/9 Salas")
         ]
         
         for clave, title, color, valor in metrics:
@@ -233,7 +233,7 @@ class InterfazJuego:
         self.canvas.bind("<Button-1>", self.al_click_fondo_canvas)
         
         # HUD de Alertas Fijo (sobre el Canvas con coordenadas relativas)
-        self.lbl_hud_alert = tk.Label(self.canvas_lf, text="Consola SysAdmin Lista.", font=("Helvetica", 9, "bold"),
+        self.lbl_hud_alert = tk.Label(self.canvas_lf, text="Consola de SysAdmin Lista.", font=("Helvetica", 9, "bold"),
                                       fg=self.color_blue, bg="#0c0d12", bd=0, relief="flat", padx=15, pady=8, wraplength=450)
         self.lbl_hud_alert.place(relx=0.5, y=20, anchor="n")
 
@@ -275,29 +275,25 @@ class InterfazJuego:
 
         self.buttons = {}
         upgrades = [
-            ("autoscale", "☁️ Licencia Cloud ($2500)\nAuto-Scaling para mitigar picos de carga."),
-            ("geo", "🌍 Router Geo DNS ($5000)\nElimina la penalización de overflow por ruteo."),
-            ("ia", "🛡️ Escudo Antivirus ($7500)\nFiltro inteligente que reduce ataques DDoS."),
-            ("party", "🏆 Ruteo Partidas ($10000)\nReduce la carga de CPU global en un 25%.")
+            ("autoscale", f"☁️ Licencia Cloud (${CONFIG_BALANCEO['COSTO_MEJORA_AUTOESCALADO']:.0f})\nAuto-Escalado para mitigar picos de carga."),
+            ("geo", f"🌍 Router Geo DNS (${CONFIG_BALANCEO['COSTO_MEJORA_BALANCEADOR_GEO']:.0f})\nElimina la penalización de overflow por ruteo."),
+            ("ia", f"🛡️ Escudo Antivirus (${CONFIG_BALANCEO['COSTO_MEJORA_ANALIZADOR_IA']:.0f})\nFiltro inteligente que reduce ataques DDoS."),
+            ("party", f"🏆 Ruteo Partidas (${CONFIG_BALANCEO['COSTO_MEJORA_RUTEO_PARTIDAS']:.0f})\nReduce la carga de CPU global en un 25%.")
         ]
 
         for clave, text in upgrades:
-            btn = tk.Button(shop_container, text=text, font=("Helvetica", 16, "bold"), relief="flat", height=2,
+            btn = tk.Button(shop_container, text=text, font=("Helvetica", 12, "bold"), relief="flat", height=2,
                             bg=self.bg_card, fg=self.fg_light, activebackground=self.color_blue, justify="left", anchor="w", padx=8,
                             command=lambda k=clave: self.comprar_mejora_click(k))
             btn.pack(side="top", fill="x", pady=3)
             self.buttons[clave] = btn
 
-
-
     # --- Logs ---
     def registrar_mensaje(self, mensaje, is_alert=False):
         self.txt_logs.configure(state="normal")
-        self.txt_logs.insert(tk.END, f"{'[ALERT] ' if is_alert else '[INFO] '}{mensaje}\n")
+        self.txt_logs.insert(tk.END, f"{'[ALERTA] ' if is_alert else '[INFO] '}{mensaje}\n")
         self.txt_logs.see(tk.END)
         self.txt_logs.configure(state="disabled")
-
-
 
     # --- Lógica de Paneo y Zoom ---
     def centrar_camara(self):
@@ -353,7 +349,7 @@ class InterfazJuego:
         if not self.canvas.find_withtag("current"):
             self.limpiar_seleccion()
 
-    # --- Clics en Nodos (Retornar "break" para evitar paneo accidental) ---
+    # --- Clics en Nodos ---
     def al_click_wan(self, event):
         self.seleccionar_elemento("wan")
         return "break"
@@ -405,7 +401,7 @@ class InterfazJuego:
             continents_list = ["América", "Europa", "Asia"]
             for cont in continents_list:
                 is_purchased = cont in self.motor.continentes_comprados
-                is_unlocked = self.motor.is_continent_unlocked(cont)
+                is_unlocked = self.motor.esta_continente_desbloqueado(cont)
                 
                 # Marco para cada continente
                 frame_cont = tk.Frame(self.inspection_content, bg=self.bg_card, padx=10, pady=6)
@@ -419,7 +415,7 @@ class InterfazJuego:
                     lbl_status.pack(side="right")
                 else:
                     if is_unlocked:
-                        cost_cont = CONFIG_BALANCEO["CONTINENT_UNLOCK_COST"]
+                        cost_cont = CONFIG_BALANCEO["COSTO_DESBLOQUEO_CONTINENTE"]
                         btn_buy = tk.Button(frame_cont, text=f"Conectar | ${cost_cont:.0f}", font=("Helvetica", 11, "bold"),
                                             bg=self.color_blue, fg="#11111b", relief="flat", padx=8,
                                             state="disabled" if (is_active or self.motor.creditos < cost_cont) else "normal",
@@ -432,7 +428,7 @@ class InterfazJuego:
 
         elif item_type == "continente":
             continente = kwargs["continente"]
-            lbl_title = tk.Label(self.inspection_content, text=f"🌐 REGION: {continente.upper()}",
+            lbl_title = tk.Label(self.inspection_content, text=f"🌐 REGIÓN: {continente.upper()}",
                                  font=("Helvetica", 14, "bold"), fg=self.color_blue, bg=self.bg_dark)
             lbl_title.pack(anchor="w", pady=(2, 8))
             
@@ -440,9 +436,9 @@ class InterfazJuego:
                                 font=("Helvetica", 12), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
             lbl_desc.pack(anchor="w", pady=(0, 12))
             
-            cities = CONFIG_BALANCEO["LOCATIONS"][continente]
-            costo = CONFIG_BALANCEO["OPEN_DATACENTER_COST"]
-            for ciudad in cities:
+            ciudades = CONFIG_BALANCEO["UBICACIONES"][continente]
+            costo = CONFIG_BALANCEO["COSTO_ABRIR_DATACENTER"]
+            for ciudad in ciudades:
                 is_open = ciudad in self.motor.centros_datos
                 
                 frame_city = tk.Frame(self.inspection_content, bg=self.bg_card, padx=10, pady=6)
@@ -472,7 +468,7 @@ class InterfazJuego:
             desc_text = (
                 f"Data Center regional ubicado en {region}.\n"
                 f"Procesa el tráfico de la red local para mejorar los tiempos de respuesta.\n\n"
-                f"• Servidores Instalados: {dc.get('servers_count', 0)}\n"
+                f"• Servidores Instalados: {dc.get('cantidad_servidores', 0)}\n"
                 f"• Carga CPU: {dc.get('estres_cpu', 0.0):.1f}%\n"
                 f"• Carga RAM: {dc.get('estres_ram', 0.0):.1f}%"
             )
@@ -480,7 +476,7 @@ class InterfazJuego:
                                 font=("Helvetica", 12), fg=self.fg_light, bg=self.bg_dark, justify="left", wraplength=360)
             lbl_desc.pack(anchor="w", pady=(2, 12))
             
-            cost_srv = CONFIG_BALANCEO["UPGRADE_SERVER_COST"]
+            cost_srv = CONFIG_BALANCEO["COSTO_MEJORA_SERVIDOR"]
             srv_state = "normal" if (not is_active and self.motor.creditos >= cost_srv) else "disabled"
             btn_srv = tk.Button(self.inspection_content, text=f"🚀 Instalar Servidor | ${cost_srv:.0f}",
                                 font=("Helvetica", 11, "bold"), bg=self.bg_card, fg=self.fg_light, state=srv_state,
@@ -519,9 +515,12 @@ class InterfazJuego:
 
     # --- Compras de Tienda ---
     def comprar_mejora_click(self, clave):
-        engine_key = "auto_scale" if clave == "autoscale" else ("ia_analyzer" if clave == "ia" else clave)
-        if clave in ["autoscale", "ia"] and getattr(self.motor, f"{engine_key}_purchased"):
-            getattr(self.motor, f"toggle_{clave if clave == 'autoscale' else 'ia_analyzer'}")()
+        clave_motor = "autoescalado" if clave == "autoscale" else ("analizador_ia" if clave == "ia" else ("balanceador_geo" if clave == "geo" else "ruteo_partidas"))
+        if clave in ["autoscale", "ia"] and getattr(self.motor, f"{clave_motor}_comprado"):
+            if clave == "autoscale":
+                self.motor.alternar_autoescalado()
+            else:
+                self.motor.alternar_analizador_ia()
         else:
             if self.motor.comprar_mejora(clave):
                 self.registrar_mensaje(self.motor.ultimo_mensaje_evento, False)
@@ -591,7 +590,7 @@ class InterfazJuego:
             if cont not in self.motor.continentes_comprados:
                 continue
                 
-            cont_cities = CONFIG_BALANCEO["LOCATIONS"][cont]
+            cont_cities = CONFIG_BALANCEO["UBICACIONES"][cont]
             cont_open = any(c in self.motor.centros_datos for c in cont_cities)
             line_color = "#a6e3a1" if cont_open else "#89b4fa"
             
@@ -628,7 +627,7 @@ class InterfazJuego:
                 border_color = "#a6e3a1"
                 text_color = self.fg_light
                 ping = int(self.motor.pings_regionales.get(ciudad, 20.0))
-                dc_text = f"{ciudad}\nServidores: {dc.get('servers_count', 0)}\n{ping} ms"
+                dc_text = f"{ciudad}\nServidores: {dc.get('cantidad_servidores', 0)}\n{ping} ms"
                 
                 # Círculo de la Ciudad
                 dc_oval_id = self.canvas.create_oval(cx - city_radius, cy - city_radius, cx + city_radius, cy + city_radius,
@@ -687,9 +686,9 @@ class InterfazJuego:
         self.cards["creditos"].config(text=f"${self.motor.creditos:,.2f}")
         self.cards["trafico"].config(text=f"{self.motor.usuarios_trafico + self.motor.trafico_ddos} req/s")
         self.cards["latencia"].config(text=f"{self.motor.latencia:.1f} ms")
-        self.cards["ceo"].config(text=f"{self.motor.ceo_approval:.0f}%")
+        self.cards["ceo"].config(text=f"{self.motor.aprobacion_ceo:.0f}%")
         
-        total_srv = sum(dc.get("servers_count", 0) for dc in self.motor.centros_datos.values())
+        total_srv = sum(dc.get("cantidad_servidores", 0) for dc in self.motor.centros_datos.values())
         self.cards["room"].config(text=f"{len(self.motor.centros_datos)}/9 DCs | {total_srv} Servs")
         
         # Latencia color
@@ -701,17 +700,17 @@ class InterfazJuego:
             self.cards["latencia"].config(fg=self.color_green)
             
         # Aprobación CEO color
-        if self.motor.ceo_approval < 40.0:
+        if self.motor.aprobacion_ceo < 40.0:
             self.cards["ceo"].config(fg=self.color_red)
-        elif self.motor.ceo_approval < 75.0:
+        elif self.motor.aprobacion_ceo < 75.0:
             self.cards["ceo"].config(fg=self.color_yellow)
         else:
             self.cards["ceo"].config(fg=self.color_green)
             
         # 4. Progressbars de Estrés
-        if self.motor.is_downtime:
-            self.lbl_cpu_text.config(text=f"ESTRES CPU: COLA DE CAIDA ({self.motor.estres_cpu:.1f}%)", fg=self.color_red)
-            self.lbl_ram_text.config(text=f"ESTRES RAM: OVERFLOW MEMORIA ({self.motor.estres_ram:.1f}%)", fg=self.color_red)
+        if self.motor.esta_caido:
+            self.lbl_cpu_text.config(text=f"ESTRÉS CPU: COLA DE CAÍDA ({self.motor.estres_cpu:.1f}%)", fg=self.color_red)
+            self.lbl_ram_text.config(text=f"ESTRÉS RAM: OVERFLOW MEMORIA ({self.motor.estres_ram:.1f}%)", fg=self.color_red)
             self.progress_cpu.config(style="Downtime.Horizontal.TProgressbar")
             self.progress_ram.config(style="Downtime.Horizontal.TProgressbar")
         else:
@@ -724,52 +723,51 @@ class InterfazJuego:
         self.progress_ram["value"] = self.motor.estres_ram
         
         # Banner Auto-scale
-        if self.motor.auto_scale_purchased:
-            if self.motor.auto_scale_enabled:
-                if self.motor.is_autoscale_running:
-                    self.lbl_autoscale_banner.config(text="AUTO-SCALING: RUNNING (LOAD > 80%)", fg=self.color_green)
+        if self.motor.autoescalado_comprado:
+            if self.motor.autoescalado_habilitado:
+                if self.motor.autoescalado_ejecutandose:
+                    self.lbl_autoscale_banner.config(text="AUTO-ESCALADO: EJECUTÁNDOSE (CARGA > 80%)", fg=self.color_green)
                 else:
-                    self.lbl_autoscale_banner.config(text="AUTO-SCALING: STANDBY (LOAD OK)", fg=self.color_yellow)
+                    self.lbl_autoscale_banner.config(text="AUTO-ESCALADO: EN ESPERA (CARGA OK)", fg=self.color_yellow)
             else:
-                self.lbl_autoscale_banner.config(text="AUTO-SCALING: APAGADO", fg=self.fg_dim)
+                self.lbl_autoscale_banner.config(text="AUTO-ESCALADO: APAGADO", fg=self.fg_dim)
         else:
-            self.lbl_autoscale_banner.config(text="AUTO-SCALING: INACTIVO", fg=self.fg_dim)
+            self.lbl_autoscale_banner.config(text="AUTO-ESCALADO: INACTIVO", fg=self.fg_dim)
             
         # 5. Botones de tienda (Los de servidor y datacenter ya se manejan desde el canvas)
-            
-        if self.motor.auto_scale_purchased:
-            if self.motor.auto_scale_enabled:
-                self.buttons["autoscale"].config(text="☁️ Licencia Cloud [ON] | -$5/t\nAuto-Scaling activo por carga.", state="normal", bg=self.color_green, fg="#11111b")
+        if self.motor.autoescalado_comprado:
+            if self.motor.autoescalado_habilitado:
+                self.buttons["autoscale"].config(text="☁️ Licencia Cloud [ON] | -$5/t\nAuto-Escalado activo por carga.", state="normal", bg=self.color_green, fg="#11111b")
             else:
-                self.buttons["autoscale"].config(text="☁️ Licencia Cloud [OFF] | -$0/t\nAuto-Scaling inactivo.", state="normal", bg=self.bg_card, fg=self.fg_light)
-        elif self.motor.creditos < CONFIG_BALANCEO["UPGRADE_AUTOSCALE_COST"]:
-            self.buttons["autoscale"].config(text=f"☁️ Compra Licencia Cloud | ${CONFIG_BALANCEO['UPGRADE_AUTOSCALE_COST']:.0f}\nHabilita el escalado automático.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
+                self.buttons["autoscale"].config(text="☁️ Licencia Cloud [OFF] | -$0/t\nAuto-Escalado inactivo.", state="normal", bg=self.bg_card, fg=self.fg_light)
+        elif self.motor.creditos < CONFIG_BALANCEO["COSTO_MEJORA_AUTOESCALADO"]:
+            self.buttons["autoscale"].config(text=f"☁️ Compra Licencia Cloud | ${CONFIG_BALANCEO['COSTO_MEJORA_AUTOESCALADO']:.0f}\nHabilita el escalado automático.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
         else:
-            self.buttons["autoscale"].config(text=f"☁️ Compra Licencia Cloud | ${CONFIG_BALANCEO['UPGRADE_AUTOSCALE_COST']:.0f}\nHabilita el escalado automático.", state="normal", bg=self.bg_card, fg=self.fg_light)
+            self.buttons["autoscale"].config(text=f"☁️ Compra Licencia Cloud | ${CONFIG_BALANCEO['COSTO_MEJORA_AUTOESCALADO']:.0f}\nHabilita el escalado automático.", state="normal", bg=self.bg_card, fg=self.fg_light)
             
-        if self.motor.geo_balancer_active:
+        if self.motor.balanceador_geo_activo:
             self.buttons["geo"].config(text="🌍 Router Geo DNS [ACTIVO]\nElimina penalización por overflow.", state="disabled", bg="#313244", fg=self.fg_dim)
-        elif is_active or self.motor.creditos < CONFIG_BALANCEO["UPGRADE_GEO_BALANCER_COST"]:
-            self.buttons["geo"].config(text=f"🌍 Compra Router Geo DNS | ${CONFIG_BALANCEO['UPGRADE_GEO_BALANCER_COST']:.0f}\nEnruta clientes a la ciudad más cercana.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
+        elif is_active or self.motor.creditos < CONFIG_BALANCEO["COSTO_MEJORA_BALANCEADOR_GEO"]:
+            self.buttons["geo"].config(text=f"🌍 Compra Router Geo DNS | ${CONFIG_BALANCEO['COSTO_MEJORA_BALANCEADOR_GEO']:.0f}\nEnruta clientes a la ciudad más cercana.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
         else:
-            self.buttons["geo"].config(text=f"🌍 Compra Router Geo DNS | ${CONFIG_BALANCEO['UPGRADE_GEO_BALANCER_COST']:.0f}\nEnruta clientes a la ciudad más cercana.", state="normal", bg=self.bg_card, fg=self.fg_light)
+            self.buttons["geo"].config(text=f"🌍 Compra Router Geo DNS | ${CONFIG_BALANCEO['COSTO_MEJORA_BALANCEADOR_GEO']:.0f}\nEnruta clientes a la ciudad más cercana.", state="normal", bg=self.bg_card, fg=self.fg_light)
             
-        if self.motor.ia_analyzer_purchased:
-            if self.motor.ia_analyzer_enabled:
+        if self.motor.analizador_ia_comprado:
+            if self.motor.analizador_ia_habilitado:
                 self.buttons["ia"].config(text="🛡️ Escudo Antivirus [ON] | -$15/t\nMitigador DDoS activo.", state="normal", bg=self.color_green, fg="#11111b")
             else:
                 self.buttons["ia"].config(text="🛡️ Escudo Antivirus [OFF] | -$0/t\nMitigador DDoS inactivo.", state="normal", bg=self.bg_card, fg=self.fg_light)
-        elif self.motor.creditos < CONFIG_BALANCEO["UPGRADE_IA_ANALYZER_COST"]:
-            self.buttons["ia"].config(text=f"🛡️ Compra Escudo Antivirus | ${CONFIG_BALANCEO['UPGRADE_IA_ANALYZER_COST']:.0f}\nFiltra tráfico DDoS.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
+        elif self.motor.creditos < CONFIG_BALANCEO["COSTO_MEJORA_ANALIZADOR_IA"]:
+            self.buttons["ia"].config(text=f"🛡️ Compra Escudo Antivirus | ${CONFIG_BALANCEO['COSTO_MEJORA_ANALIZADOR_IA']:.0f}\nFiltra tráfico DDoS.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
         else:
-            self.buttons["ia"].config(text=f"🛡️ Compra Escudo Antivirus | ${CONFIG_BALANCEO['UPGRADE_IA_ANALYZER_COST']:.0f}\nFiltra tráfico DDoS.", state="normal", bg=self.bg_card, fg=self.fg_light)
+            self.buttons["ia"].config(text=f"🛡️ Compra Escudo Antivirus | ${CONFIG_BALANCEO['COSTO_MEJORA_ANALIZADOR_IA']:.0f}\nFiltra tráfico DDoS.", state="normal", bg=self.bg_card, fg=self.fg_light)
             
-        if self.motor.party_routing_active:
+        if self.motor.ruteo_partidas_activo:
             self.buttons["party"].config(text="🏆 Ruteo Partidas [ACTIVO]\nReduce carga CPU global en 25%.", state="disabled", bg="#313244", fg=self.fg_dim)
-        elif is_active or self.motor.creditos < CONFIG_BALANCEO["UPGRADE_PARTY_ROUTING_COST"]:
-            self.buttons["party"].config(text=f"🏆 Compra Ruteo Partidas | ${CONFIG_BALANCEO['UPGRADE_PARTY_ROUTING_COST']:.0f}\nOptimiza tráfico por tipo de partida.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
+        elif is_active or self.motor.creditos < CONFIG_BALANCEO["COSTO_MEJORA_RUTEO_PARTIDAS"]:
+            self.buttons["party"].config(text=f"🏆 Compra Ruteo Partidas | ${CONFIG_BALANCEO['COSTO_MEJORA_RUTEO_PARTIDAS']:.0f}\nOptimiza tráfico por tipo de partida.", state="disabled", bg=self.bg_card, fg=self.fg_dim)
         else:
-            self.buttons["party"].config(text=f"🏆 Compra Ruteo Partidas | ${CONFIG_BALANCEO['UPGRADE_PARTY_ROUTING_COST']:.0f}\nOptimiza tráfico por tipo de partida.", state="normal", bg=self.bg_card, fg=self.fg_light)
+            self.buttons["party"].config(text=f"🏆 Compra Ruteo Partidas | ${CONFIG_BALANCEO['COSTO_MEJORA_RUTEO_PARTIDAS']:.0f}\nOptimiza tráfico por tipo de partida.", state="normal", bg=self.bg_card, fg=self.fg_light)
             
         # 6. Actualizar Panel de Inspección
         self.actualizar_panel_inspeccion()
@@ -794,7 +792,7 @@ class InterfazJuego:
                                  f"¡HAS SIDO DESPEDIDO!\n\nLa junta directiva ha prescindido de tus servicios por mala gestión corporativa.\n\n"
                                  f"Días sobrevivientes: {self.motor.dias_transcurridos - 1}\n"
                                  f"Créditos finales: ${self.motor.creditos:.2f}\n"
-                                 f"Aprobación final del CEO: {self.motor.ceo_approval:.0f}%",
+                                 f"Aprobación final del CEO: {self.motor.aprobacion_ceo:.0f}%",
                                  parent=self.ventana)
             self.raiz.destroy()
             return
@@ -805,12 +803,12 @@ class InterfazJuego:
         if workday_was_active and not self.motor.jornada_activa:
             self.registrar_mensaje("=========================================", False)
             self.registrar_mensaje(f"📋 REPORTE DE FIN DE JORNADA - DIA {self.motor.dias_transcurridos}", False)
-            self.registrar_mensaje(f"Presupuesto Base Corporativo: +${self.motor.daily_base_budget:.2f}", False)
-            self.registrar_mensaje(f"Bono por Usuarios Satisfechos: +${self.motor.daily_satisfied_bonus:.2f} ({self.motor.daily_satisfied_users} usuarios)", False)
-            self.registrar_mensaje(f"Penalizaciones de hoy: -${self.motor.daily_penalty:.2f}", True if self.motor.daily_penalty > 0 else False)
-            self.registrar_mensaje(f"Costo de Infraestructura: -${self.motor.daily_maintenance:.2f}", False)
+            self.registrar_mensaje(f"Presupuesto Base Corporativo: +${self.motor.presupuesto_base_diario:.2f}", False)
+            self.registrar_mensaje(f"Bono por Usuarios Satisfechos: +${self.motor.bono_satisfechos_diario:.2f} ({self.motor.usuarios_satisfechos_diarios} usuarios)", False)
+            self.registrar_mensaje(f"Penalizaciones de hoy: -${self.motor.penalizacion_diaria:.2f}", True if self.motor.penalizacion_diaria > 0 else False)
+            self.registrar_mensaje(f"Costo de Infraestructura: -${self.motor.mantenimiento_diario:.2f}", False)
             self.registrar_mensaje(f"Presupuesto Neto Final: ${self.motor.creditos:.2f}", False)
-            self.registrar_mensaje(f"Aprobación CEO: {self.motor.ceo_approval:.0f}%", False)
+            self.registrar_mensaje(f"Aprobación CEO: {self.motor.aprobacion_ceo:.0f}%", False)
             self.registrar_mensaje("=========================================", False)
             
             if self.motor.fin_del_juego:
@@ -820,7 +818,7 @@ class InterfazJuego:
                                      f"¡HAS SIDO DESPEDIDO!\n\nLa junta directiva ha prescindido de tus servicios por mala gestión corporativa.\n\n"
                                      f"Días sobrevivientes: {self.motor.dias_transcurridos}\n"
                                      f"Créditos finales: ${self.motor.creditos:.2f}\n"
-                                     f"Aprobación final del CEO: {self.motor.ceo_approval:.0f}%",
+                                     f"Aprobación final del CEO: {self.motor.aprobacion_ceo:.0f}%",
                                      parent=self.ventana)
                 self.raiz.destroy()
                 return
@@ -831,10 +829,10 @@ class InterfazJuego:
             elif self.motor.contador_ticks % 4 == 0:
                 self.registrar_mensaje(self.motor.ultimo_mensaje_evento, False)
                 
-            if self.motor.is_downtime:
-                self.registrar_mensaje(f"FALLO DE SLA: Servidores caídos por sobrecarga! Multa: -${CONFIG_BALANCEO['DOWNTIME_PENALTY']:.1f}", True)
+            if self.motor.esta_caido:
+                self.registrar_mensaje(f"FALLO DE SLA: Servidores caídos por sobrecarga! Multa: -${CONFIG_BALANCEO['PENALIZACION_CAIDA']:.1f}", True)
             elif self.motor.latencia > 100.0:
-                self.registrar_mensaje(f"LATENCIA EXCESIVA: SLA Breach (>100ms)! Multa: -${CONFIG_BALANCEO['LATENCY_PENALTY']:.1f}", True)
+                self.registrar_mensaje(f"LATENCIA EXCESIVA: SLA Breach (>100ms)! Multa: -${CONFIG_BALANCEO['PENALIZACION_LATENCIA']:.1f}", True)
 
         self.actualizar_interfaz()
         self.raiz.after(1000, self.bucle_tick)
