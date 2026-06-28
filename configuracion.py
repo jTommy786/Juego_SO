@@ -1,7 +1,7 @@
 # ==============================================================================
-# DICCIONARIO DE BALANCEO (BALANCING_CONFIG)
+# DICCIONARIO DE BALANCEO (CONFIG_BALANCEO)
 # ==============================================================================
-BALANCING_CONFIG = {
+CONFIG_BALANCEO = {
     # REGIONES DEL SISTEMA (Sub-regiones por ciudades)
     "LOCATIONS": {
         "América": ["Miami", "Bogotá", "São Paulo"],
